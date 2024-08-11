@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
 jobs:
   convert_via_pandoc:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v2
         id: changes
         with:
@@ -18,11 +18,11 @@ jobs:
             autotools:
               - 'aclocal.m4'
               - 'configure.ac'
-      - uses: docker://pandoc/core:2.17
+      - uses: docker://pandoc/core:3.3
         if: ${{ github.event_name == 'workflow_dispath' || steps.changes.outputs.man == 'true' }}
         with:
           args: -s man.md -t man -o shc.1
-      - uses: docker://pandoc/core:2.17
+      - uses: docker://pandoc/core:3.3
         if: ${{ github.event_name == 'workflow_dispath' || steps.changes.outputs.man == 'true' }}
         with:
           args: -s man.md -t html -o man.html
