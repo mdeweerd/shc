@@ -3,8 +3,15 @@ exclude:
   (?x)^(
   configure|
   configure\..*|
-  .cache/.*
-  )$
+  .cache/.*|
+  .*Makefile.in|
+  autogen.sh|
+  config/install-sh|
+  config/depcomp|
+  config/compile|
+  config/missing|
+  aclocal.m4|
+  __NONE__)$
 repos:
   - repo: https://github.com/executablebooks/mdformat
     # Do this before other tools "fixing" the line endings
@@ -48,7 +55,7 @@ repos:
     rev: v6.2.1
     hooks:
       - id: beautysh
-        exclude: (?x)^(test/.*)$
+        exclude: (?x)^(test/.*|config/missing|configure|autogen.sh)$
         additional_dependencies:
           - setuptools
   - repo: https://github.com/codespell-project/codespell
