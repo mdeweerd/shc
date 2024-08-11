@@ -46,7 +46,7 @@ static const char * copying[] = {
 "    along with this program; if not, write to the Free Software",
 "    @Neurobin, Dhaka, Bangladesh",
 "",
-"    Report problems and questions to:http://github.com/neurobin/shc",
+"    Report problems and questions to:https://github.com/neurobin/shc",
 "",
 0};
 
@@ -57,7 +57,7 @@ static const char * abstract[] = {
 "    of the script specified at command line.",
 "",
 "    Binary version will be saved with a .x extension by default.",
-"    You can specify output file name too with [-o outfile] option.",
+"    You can specify output file name too with [-o OUTFILE] option.",
 "",
 "    You can specify expiration date [-e] too, after which binary will",
 "    refuse to be executed, displaying \"[-m]\" instead.",

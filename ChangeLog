@@ -233,7 +233,7 @@ faster at startup. Other related advantage is that the only information
 not encrypted in .x.c is an stamp, expiration date and provider email
 address.
 
-	Something equivalent to checksums have been used to enforced at
+	Something equivalent to checksums has been used to enforce at
 execution that the executing shell has not been modified from the time
 the script was compiled. If anybody tries to change the executing shell,
 .x will refuse to execute.
