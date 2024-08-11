@@ -780,7 +780,7 @@ static int parse_an_arg(int argc, char * argv[])
 				my_name,  optarg);
 			return -1;
 		}
-		sprintf(date, "%lld", (long long)expdate);
+		snprintf(date, sizeof(date), "%lld", (long long)expdate);  // NOLINT
 		if (verbose) fprintf(stderr, "%s -e %s", my_name, ctime(&expdate));
 		expdate = atoll(date);
 		if (verbose) fprintf(stderr, "%s -e %s", my_name, ctime(&expdate));
@@ -941,8 +941,9 @@ void key(void * str, int len)
  */
 void arc4(void * str, int len)
 {
-	unsigned char tmp, * ptr = (unsigned char *)str;
+	unsigned char * ptr = (unsigned char *)str;
 	while (len > 0) {
+		unsigned char tmp;
 		indx++;
 		tmp = stte[indx];
 		jndx += tmp;
@@ -1011,6 +1012,7 @@ int eval_shell(char * text)
 {
 	int i;
 	char * ptr;
+	char * tmp_realloc;
 
 	ptr = strchr(text, (int)'\n');
 	if (!ptr)
@@ -1020,12 +1022,17 @@ int eval_shell(char * text)
 	ptr  = malloc(i + 1);
 	shll = malloc(i + 1);
 	opts = malloc(i + 1);
-	if (!ptr || !shll || !opts)
+	if (!ptr || !shll || !opts) {
+		ptr && (free(ptr), 1);
+		shll && (free(shll), 1);
+		opts && (free(opts), 1);
 		return -1;
+	}
 	strncpy(ptr, text, i);
 	ptr[i] = '\0';
 
 	*opts = '\0';
+	// cppcheck-suppress invalidscanf   // (required memory checked above)
 	i = sscanf(ptr, " #!%s%s %c", shll, opts, opts);
 	if (i < 1 || i > 2) {
 		fprintf(stderr, "%s: invalid first line in script: %s\n", my_name, ptr);
@@ -1034,7 +1041,13 @@ int eval_shell(char * text)
 	}
 	free(ptr);
 
-	shll = realloc(shll, strlen(shll) + 1);
+	tmp_realloc = realloc(shll, strlen(shll) + 1);
+	if (!tmp_realloc) {
+		fprintf(stderr, "%s: Realloc issue\n", my_name);
+		free(shll);
+		return -1;
+	}
+	shll = tmp_realloc;
 	ptr  = strrchr(shll, (int)'/');
 	if (!ptr) {
 		fprintf(stderr, "%s: invalid shll\n", my_name);
@@ -1042,7 +1055,7 @@ int eval_shell(char * text)
 	}
 	if (*ptr == '/')
 		ptr++;
-	if (verbose) fprintf(stderr, "%s shll=%s\n", my_name, ptr);
+	if (verbose) fprintf(stderr, "%s: shll=%s\n", my_name, ptr);
 
 	for(i=0; shellsDB[i].shll; i++) {
 		if(!strcmp(ptr, shellsDB[i].shll)) {
@@ -1062,7 +1075,12 @@ int eval_shell(char * text)
 	if (verbose) fprintf(stderr, "%s [-x]=%s\n", my_name, xecc);
 	if (verbose) fprintf(stderr, "%s [-l]=%s\n", my_name, lsto);
 
-	opts = realloc(opts, strlen(opts) + 1);
+	tmp_realloc = realloc(opts, strlen(opts) + 1);
+	if (!tmp_realloc) {
+		free(opts);
+		return -1;
+	}
+	opts = tmp_realloc;
 	if (*opts && !strcmp(opts, lsto)) {
 		fprintf(stderr, "%s opts=%s : Is equal to [-l]. Removing opts\n", my_name, opts);
 		*opts = '\0';
@@ -1077,29 +1095,39 @@ int eval_shell(char * text)
 char * read_script(char * file)
 {
 	FILE * i;
-	char * text;
+	char * l_text;
+	char * tmp_realloc;
 	int cnt, l;
 
-	text = malloc(SIZE);
-	if (!text)
+	l_text = malloc(SIZE);
+	if (!l_text)
 		return NULL;
 	i = fopen(file, "r");
-	if (!i)
+	if (!i) {
+		free(l_text);
 		return NULL;
+	}
 	for (l = 0;;) {
-		text = realloc(text, l + SIZE);
-		if (!text)
+		tmp_realloc = realloc(l_text, l + SIZE);
+		if (!tmp_realloc) {
+			free (l_text);
+			fclose(i);
 			return NULL;
-		cnt = fread(&text[l], 1, SIZE, i);
+		}
+		l_text = tmp_realloc;
+		cnt = fread(&l_text[l], 1, SIZE, i);
 		if (!cnt)
 			break;
 		l += cnt;
 	}
 	fclose(i);
-	text = realloc(text, l + 1);
-	if (!text)
+	tmp_realloc = realloc(l_text, l + 1);
+	if (!tmp_realloc) {
+		free (l_text);
 		return NULL;
-	text[l] = '\0';
+	}
+	l_text = tmp_realloc;
+	l_text[l] = '\0';
 
 	/* Check current System ARG_MAX limit. */
 	if (l > 0.80 * (cnt = sysconf(_SC_ARG_MAX))) {
@@ -1110,7 +1138,7 @@ char * read_script(char * file)
 "   and your script \"%s\" is %d bytes length.\n",
 		my_name, cnt, file, l);
 	}
-	return text;
+	return l_text;
 }
 
 unsigned rand_mod(unsigned mod)
@@ -1118,7 +1146,7 @@ unsigned rand_mod(unsigned mod)
 	/* Without skew */
 	unsigned rnd, top = RAND_MAX;
 	top -= top % mod;
-	while (top <= (rnd = rand()))
+	while (top <= (rnd = rand()))  // NOLINT
 		continue;
 	/* Using high-order bits. */
 	rnd = 1.0*mod*rnd/(1.0+top);
@@ -1135,9 +1163,9 @@ int noise(char * ptr, unsigned min, unsigned xtra, int str)
 	if (xtra) xtra = rand_mod(xtra);
 	xtra += min;
 	for (min = 0; min < xtra; min++, ptr++)
-		do
+		do {
 			*ptr = rand_chr();
-		while (str && !isalnum((int)*ptr));
+		} while (str && !isalnum((int)*ptr));
 	if (str) *ptr = '\0';
 	return xtra;
 }
@@ -1166,7 +1194,7 @@ void prnt_array(FILE * o, void * ptr, char * name, int l, char * cast)
 {
 	int m = rand_mod(1+l/4);		/* Random amount of random pre  padding (offset) */
 	int n = rand_mod(1+l/4);		/* Random amount of random post padding  (tail)  */
-	int a = (offset+m)%l;
+	int a = l?(offset+m)%l:0;
 	if (cast && a) m += l - a;		/* Type alignment. */
 	fprintf(o, "\n");
 	fprintf(o, "#define      %s_z	%d", name, l);
@@ -1220,7 +1248,7 @@ int write_C(char * file, char * argv[])
 	int chk2_z = tst2_z;
 	char* name = strdup(file);
 	FILE * o;
-	int indx;
+	int l_idx;
 	int numd = 0;
 	int done = 0;
 
@@ -1230,7 +1258,8 @@ int write_C(char * file, char * argv[])
 	stte_0();
 	 key(pswd, pswd_z);
 	msg1_z += strlen(mail);
-	msg1 = strcat(realloc(msg1, msg1_z), mail);
+	// cppcheck-suppress invalidFunctionArg   // msg1_z is positive
+	msg1 = strcat(realloc(msg1, msg1_z), mail);  // NOLINT
 	arc4(msg1, msg1_z); numd++;
 	arc4(date, date_z); numd++;
 	arc4(shll, shll_z); numd++;
@@ -1241,9 +1270,9 @@ int write_C(char * file, char * argv[])
 	 key(chk1, chk1_z);
 	arc4(chk1, chk1_z); numd++;
 	arc4(msg2, msg2_z); numd++;
-	indx = !rlax[0];
+	l_idx = !rlax[0];
 	arc4(rlax, rlax_z); numd++;
-	if (indx && key_with_file(kwsh)) {
+	if (l_idx && key_with_file(kwsh)) {
 		fprintf(stderr, "%s: invalid file name: %s ", my_name, kwsh);
 		perror("");
 		cleanup_write_c(msg1, msg2, chk1, chk2, tst1, tst2, kwsh, name);
@@ -1256,7 +1285,7 @@ int write_C(char * file, char * argv[])
 	arc4(chk2, chk2_z); numd++;
 
 	/* Output */
-	name = strcat(realloc(name, strlen(name)+5), ".x.c");
+	name = strcat(realloc(name, strlen(name)+5), ".x.c");  // NOLINT
 	o = fopen(name, "w");
 	if (!o) {
 		fprintf(stderr, "%s: creating output file: %s ", my_name, name);
@@ -1267,15 +1296,15 @@ int write_C(char * file, char * argv[])
 	fprintf(o, "#if 0\n");
 	fprintf(o, "\t%s %s, %s\n", my_name, version, subject);
 	fprintf(o, "\t%s %s %s %s\n\n\t", cpright, provider.f, provider.s, provider.e);
-	for (indx = 0; argv[indx]; indx++)
-		fprintf(o, "%s ", argv[indx]);
+	for (l_idx = 0; argv[l_idx]; l_idx++)
+		fprintf(o, "%s ", argv[l_idx]);
 	fprintf(o, "\n#endif\n\n");
 	fprintf(o, "static  char data [] = ");
 	do {
 		done = 0;
-		indx = rand_mod(15);
+		l_idx = rand_mod(15);
 		do {
-			switch (indx) {
+			switch (l_idx) {
 			case  0: if (pswd_z>=0) {prnt_array(o, pswd, "pswd", pswd_z, 0); pswd_z=done=-1; break;}
 			case  1: if (msg1_z>=0) {prnt_array(o, msg1, "msg1", msg1_z, 0); msg1_z=done=-1; break;}
 			case  2: if (date_z>=0) {prnt_array(o, date, "date", date_z, 0); date_z=done=-1; break;}
@@ -1292,7 +1321,7 @@ int write_C(char * file, char * argv[])
 			case 13: if (tst2_z>=0) {prnt_array(o, tst2, "tst2", tst2_z, 0); tst2_z=done=-1; break;}
 			case 14: if (chk2_z>=0) {prnt_array(o, chk2, "chk2", chk2_z, 0); chk2_z=done=-1; break;}
 			}
-			indx = 0;
+			l_idx = 0;
 		} while (!done);
 	} while (numd+=done);
 	cleanup_write_c(msg1, msg2, chk1, chk2, tst1, tst2, kwsh, name);
@@ -1304,8 +1333,8 @@ int write_C(char * file, char * argv[])
 	fprintf(o, HARDENING_line, HARDENING_flag);
     fprintf(o, BUSYBOXON_line, BUSYBOXON_flag);
 	fprintf(o, MMAP2_line, MMAP2_flag);
-	for (indx = 0; RTC[indx]; indx++)
-		fprintf(o, "%s\n", RTC[indx]);
+	for (l_idx = 0; RTC[l_idx]; l_idx++)
+		fprintf(o, "%s\n", RTC[l_idx]);
 	fflush(o);
 	fclose(o);
 
@@ -1328,23 +1357,29 @@ int make(void)
 		ldflags = "";
 
 if(!file2){
-file2=(char*)realloc(file2,strlen(file)+3);
-strcpy(file2,file);
-file2=strcat(file2,".x");
+char * tmp_realloc;
+tmp_realloc=(char*)realloc(file2,strlen(file)+3);
+if (!tmp_realloc) {
+	free(file2);
+	return -1;
+}
+file2=tmp_realloc;
+strcpy(file2,file);  // NOLINT
+file2=strcat(file2,".x");  // NOLINT
 
 }
-	sprintf(cmd, "%s %s %s \'%s.x.c\' -o %s", cc, cflags, ldflags, file, file2);
+	snprintf(cmd, SIZE, "%s %s %s \'%s.x.c\' -o %s", cc, cflags, ldflags, file, file2);
 	if (verbose) fprintf(stderr, "%s: %s\n", my_name, cmd);
 	if (system(cmd))
 		return -1;
 	char* strip = getenv("STRIP");
 	if (!strip)
 		strip = "strip";
-	sprintf(cmd, "%s %s", strip, file2);
+	snprintf(cmd, SIZE, "%s %s", strip, file2);
 	if (verbose) fprintf(stderr, "%s: %s\n", my_name, cmd);
 	if (system(cmd))
 		fprintf(stderr, "%s: never mind\n", my_name);
-	sprintf(cmd, "chmod ug=rwx,o=rx %s", file2);
+	snprintf(cmd, SIZE, "chmod ug=rwx,o=rx %s", file2);
 	if (verbose) fprintf(stderr, "%s: %s\n", my_name, cmd);
 	if (system(cmd))
 		fprintf(stderr, "%s: remove read permission\n", my_name);
