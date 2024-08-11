@@ -1,0 +1,21 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: sudo apt-get update -q && sudo apt install -y dash bash ksh zsh tcsh csh rc
+
+    - name: Build and Test
+      run: |
+        ./autogen.sh
+        ./configure
+        make
+        make test
