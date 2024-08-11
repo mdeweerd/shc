@@ -77,7 +77,7 @@ repos:
           - '--template={file}({line}): {severity} ({id}): {message}'
           - --inline-suppr
       - id: cpplint
-        args: ["--filter=-build/header_guard,-build/include,-build/include_subdir,-legal/copyright,-readbility/casting,-readability/fn_size,-whitespace/blank_line,-whitespace/braces,-whitespace/comma,-whitespace/comments,-whitespace/line_length,-whitespace/newline,-whitespace/operators,-whitespace/parens,-whitespace/semicolon,-whitespace/tab,-whitespace/todo"]
+        args: ["--filter=-build/header_guard,-build/include,-build/include_subdir,-legal/copyright,-readability/casting,-readability/fn_size,-whitespace/blank_line,-whitespace/braces,-whitespace/comma,-whitespace/comments,-whitespace/line_length,-whitespace/newline,-whitespace/operators,-whitespace/parens,-whitespace/semicolon,-whitespace/tab,-whitespace/todo"]
         additional_dependencies:
           - cpplint>=1.6.1
   - repo: https://github.com/shellcheck-py/shellcheck-py
