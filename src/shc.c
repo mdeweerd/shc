@@ -735,7 +735,7 @@ static const char * RTC[] = {
 "int main(int argc, char ** argv)",
 "{",
 "#if SETUID",
-"   setuid(0);",
+"   (void) setuid(0);",
 "#endif",
 "#if DEBUGEXEC",
 "	debugexec(\"main\", argc, argv);",
