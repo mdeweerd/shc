@@ -5,6 +5,7 @@ exclude:
   configure\..*|
   .cache/.*|
   .*Makefile.in|
+  .*Makefile.am|
   autogen.sh|
   config/install-sh|
   config/depcomp|
