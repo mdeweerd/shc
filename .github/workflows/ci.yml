@@ -27,7 +27,7 @@ jobs:
         #SANITIZE="${SANITIZE}  -fsanitize=bounds-strict"
         SANITIZE="${SANITIZE} -fsanitize=bool"
         SANITIZE="${SANITIZE} -fsanitize=enum"
-        SANITIZE="${SANITIZE} -fsanitize-recover"  # will try to continue running the program
+        #SANITIZE="${SANITIZE} -fsanitize-recover"  # will try to continue running the program
         #SANITIZE_LINK="-static-libasan -static -lasan -static -lubsan -ldl -lm"
         SANITIZE_LINK="-l:libasan.a -l:libubsan.a -ldl -lm"
         SANITIZE="${SANITIZE} -fno-sanitize=alignment"
