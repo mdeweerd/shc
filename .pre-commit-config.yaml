@@ -56,7 +56,7 @@ repos:
     rev: v6.2.1
     hooks:
       - id: beautysh
-        exclude: (?x)^(test/.*|config/missing|configure|autogen.sh)$
+        exclude: (?x)^(test/test\..*|config/missing|configure|autogen.sh)$
         additional_dependencies:
           - setuptools
   - repo: https://github.com/codespell-project/codespell

@@ -14,6 +14,8 @@ jobs:
       run: sudo apt-get update -q && sudo apt install -y dash bash ksh zsh tcsh csh rc
 
     - name: Build and Test (with sanitize)
+      env:
+        SKIP: python2
       run: |
         SANITIZE="${SANITIZE} -fsanitize=address"
         #SANITIZE="${SANITIZE} -fsanitize=thread"
@@ -38,9 +40,20 @@ jobs:
         make CC=gcc CFLAGS="${SANITIZE} -g -O2" LDFLAGS="${SANITIZE_LINK}" test
 
     - name: Build and Test (Normal)
+      env:
+        SKIP: python2
       run: |
         ./autogen.sh
         ./configure
         make clean
         make
         make test
+
+    - name: Provide log as artifact
+      uses: actions/upload-artifact@v4
+      if: ${{ ! cancelled() }}
+      with:
+        name: shc.failingtests
+        path: |
+          /tmp/shc.*.tst/*
+        retention-days: 2

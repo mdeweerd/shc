@@ -14,47 +14,69 @@ txtrst='\e[0m'    # Text Reset
 stat=0
 pc=0
 fc=0
+# Comma separated list of shells that are skipped
+SKIP=",${SKIP},ash,"
 echo
-echo "== Running tests ..."
+echo "== Running tests ... (Skip expression: $SKIP)"
 for shell in "${shells[@]}"; do
-  if [ ! -x "$shell" ] ; then
-    echo    "===================================================="
-    echo -e "=== $shell                :${txtred}MISSING${txtrst}"
-    echo    "===================================================="
-    ((fc++))
-    ((pc++))
-    continue
-  fi
-  for opt in "${check_opts[@]}"; do
-    tmpd=$(mktemp -d)
-    tmpf="$tmpd/test.$(basename "$shell")"
-    {
-      echo '#!'"$shell"
-      if [ "${shell#*pyth}" = "$shell" ] ; then
-        echo "echo 'Hello World fp:'\$1 sp:\$2"
-      else
-        echo 'import sys'
-        echo 'sys.stdout.write(("Hello World fp:%s sp:%s" % (sys.argv[1],sys.argv[2]))+"\n")'
-      fi
-    } > "$tmpf"
-    # shellcheck disable=SC2086
-    "$shc" $opt -f "$tmpf" -o "$tmpd/a.out"
-    out=$("$tmpd/a.out" first second)
-    #~ echo "  Output: $out"
-    if [[ "$out" = 'Hello World fp:first sp:second' ]]; then
-      echo    "===================================================="
-      echo -e "=== $shell [with shc $opt]: ${txtgrn}PASSED${txtrst}"
-      echo    "===================================================="
-      ((pc++))
-    else
-      echo    "===================================================="
-      echo -e "=== $shell [with shc $opt]: ${txtred}FAILED${txtrst}"
-      echo    "===================================================="
-      stat=1
-      ((fc++))
+    if [ "${SKIP#*,${shell##*/},}" != "$SKIP" ] ; then
+        echo    "===================================================="
+        echo -e "=== $shell                :SKIPPED"
+        echo    "===================================================="
+        continue
     fi
-    rm -r "$tmpd"
-  done
+    if [ ! -x "$shell" ] ; then
+        echo    "===================================================="
+        echo -e "=== $shell                :${txtred}MISSING${txtrst}"
+        echo    "===================================================="
+        ((fc++))
+        stat=1
+        continue
+    fi
+    for opt in "${check_opts[@]}"; do
+        tmpd=$(mktemp -d /tmp/shc.XXX.tst)
+        tmpf="$tmpd/test.$(basename "$shell")"
+        tmpa="$tmpd/a.out"
+        tmpl="$tmpd/a.log"
+        out=""
+        {
+            echo '#!'"$shell"
+            if [ "${shell#*pyth}" = "$shell" ] ; then
+                echo "echo 'Hello World fp:'\$1 sp:\$2"
+            else
+                echo 'import sys'
+                echo 'sys.stdout.write(("Hello World fp:%s sp:%s" % (sys.argv[1],sys.argv[2]))+"\n")'
+            fi
+        } > "$tmpf"
+        # shellcheck disable=SC2086
+        "$shc" $opt -f "$tmpf" -o "$tmpa"
+        # ls -la "$tmpa"
+        if [ "$opt" = "-D" ] ; then
+            # Hide debug output
+            out=$("$tmpa" first second 2>/dev/null)
+            outdbg=$("$tmpa" first second 2>1)
+            # TODO: compare dbg output
+        else
+            out=$("$tmpa" first second 2>&1)
+        fi
+
+        if [[ "$out" = 'Hello World fp:first sp:second' ]]; then
+            echo    "===================================================="
+            echo -e "=== $shell [with shc $opt]: ${txtgrn}PASSED${txtrst}"
+            echo    "===================================================="
+            ((pc++))
+            rm -rf "$tmpd"
+        else
+            echo    "===================================================="
+            echo -e "=== $shell [with shc $opt]: ${txtred}FAILED${txtrst}"
+            echo    "===================================================="
+            echo "  Files kept in '$tmpd'"
+            printf "  *** Output:\n%s\n *** End of output\n" "$out"
+            echo "$out" > "$tmpl"
+            stat=1
+            ((fc++))
+        fi
+    done
 done
 
 echo
@@ -62,15 +84,15 @@ echo "Test Summary"
 echo "------------"
 
 if ((pc>0)); then
-  pt="${txtgrn}PASSED${txtrst}"
+    pt="${txtgrn}PASSED${txtrst}"
 else
-  pt="PASSED"
+    pt="PASSED"
 fi
 
 if ((fc>0)); then
-  ft="${txtred}FAILED${txtrst}"
+    ft="${txtred}FAILED${txtrst}"
 else
-  ft="FAILED"
+    ft="FAILED"
 fi
 
 echo -e "$pt: $pc"
@@ -78,4 +100,7 @@ echo -e "$ft: $fc"
 echo "------------"
 echo
 
+if ((stat>0)); then
+    echo "EXIT with code $stat"
+fi
 exit $stat

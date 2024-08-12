@@ -1,4 +1,4 @@
-AC_INIT([shc], [4.0.3], [http://github.com/neurobin/shc/issues])
+AC_INIT([shc],[4.0.3],[http://github.com/neurobin/shc/issues])
 AC_CONFIG_AUX_DIR(config)
 #prefix="/usr"
 AC_CONFIG_SRCDIR([src/shc.c])
@@ -25,4 +25,5 @@ AC_FUNC_REALLOC
 AC_CHECK_FUNCS([memset putenv strchr strdup strrchr])
 
 
-AC_OUTPUT(Makefile src/Makefile)
+AC_CONFIG_FILES([Makefile src/Makefile])
+AC_OUTPUT
