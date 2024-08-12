@@ -771,7 +771,7 @@ static int parse_an_arg(int argc, char *argv[])
 
 	switch (getopt(argc, argv, opts)) {
 	case 'e':
-		memset(tmp, 0, sizeof (tmp));
+		memset(tmp, 0, sizeof(tmp));
 		cnt = sscanf(optarg, "%2d/%2d/%4d%c",
 			&tmp->tm_mday, &tmp->tm_mon, &tmp->tm_year, &ctrl);
 		if (cnt == 3) {
@@ -784,7 +784,7 @@ static int parse_an_arg(int argc, char *argv[])
 				my_name, optarg);
 			return -1;
 		}
-		snprintf(date, sizeof (date), "%lld", (long long)expdate);  // NOLINT
+		snprintf(date, sizeof(date), "%lld", (long long)expdate);  // NOLINT
 		if (verbose) { fprintf(stderr, "%s -e %s", my_name, ctime(&expdate)); }
 		expdate = atoll(date);
 		if (verbose) { fprintf(stderr, "%s -e %s", my_name, ctime(&expdate)); }
@@ -980,7 +980,7 @@ int key_with_file(char *file)
 	}
 
 	/* Turn on stable fields */
-	memset(control, 0, sizeof (control));
+	memset(control, 0, sizeof(control));
 	control->st_ino = statf->st_ino;
 	control->st_dev = statf->st_dev;
 	control->st_rdev = statf->st_rdev;
@@ -989,7 +989,7 @@ int key_with_file(char *file)
 	control->st_size = statf->st_size;
 	control->st_mtime = statf->st_mtime;
 	control->st_ctime = statf->st_ctime;
-	key(control, sizeof (control));
+	key(control, sizeof(control));
 	return 0;
 }
 
@@ -1173,7 +1173,7 @@ unsigned rand_mod(unsigned mod)
 
 char rand_chr(void)
 {
-	return (char)rand_mod(1 << (sizeof (char) << 3));
+	return (char)rand_mod(1 << (sizeof(char) << 3));
 }
 
 int noise(char *ptr, unsigned min, unsigned xtra, int str)
@@ -1246,7 +1246,7 @@ void cleanup_write_c(char *msg1, char *msg2, char *chk1, char *chk2, char *tst1,
 int write_C(char *file, char *argv[])
 {
 	char pswd[256];
-	int pswd_z = sizeof (pswd);
+	int pswd_z = sizeof(pswd);
 	char *msg1 = strdup("has expired!\n");
 	int msg1_z = strlen(msg1) + 1;
 	int date_z = strlen(date) + 1;
@@ -1261,7 +1261,7 @@ int write_C(char *file, char *argv[])
 	int chk1_z = tst1_z;
 	char *msg2 = strdup("abnormal behavior!");
 	int msg2_z = strlen(msg2) + 1;
-	int rlax_z = sizeof (rlax);
+	int rlax_z = sizeof(rlax);
 	int opts_z = strlen(opts) + 1;
 	int text_z = strlen(text) + 1;
 	char *tst2 = strdup("shell has changed!");
