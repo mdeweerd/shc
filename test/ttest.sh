@@ -51,6 +51,8 @@ for shell in "${shells[@]}"; do
         # shellcheck disable=SC2086
         "$shc" $opt -f "$tmpf" -o "$tmpa"
         # ls -la "$tmpa"
+
+        expected='Hello World fp:first sp:second'
         if [ "$opt" = "-D" ] ; then
             # Hide debug output
             out=$("$tmpa" first second 2>/dev/null)
@@ -59,8 +61,7 @@ for shell in "${shells[@]}"; do
         else
             out=$("$tmpa" first second 2>&1)
         fi
-
-        if [[ "$out" = 'Hello World fp:first sp:second' ]]; then
+        if [[ "$out" = "$expected" ]]; then
             echo    "===================================================="
             echo -e "=== $shell [with shc $opt]: ${txtgrn}PASSED${txtrst}"
             echo    "===================================================="
@@ -71,7 +72,8 @@ for shell in "${shells[@]}"; do
             echo -e "=== $shell [with shc $opt]: ${txtred}FAILED${txtrst}"
             echo    "===================================================="
             echo "  Files kept in '$tmpd'"
-            printf "  *** Output:\n%s\n *** End of output\n" "$out"
+            printf "*** Expected Output:\n%s\n" "$expected"
+            printf "*** Output:\n%s\n*** End of output\n" "$out"
             echo "$out" > "$tmpl"
             stat=1
             ((fc++))
