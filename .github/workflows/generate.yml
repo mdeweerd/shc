@@ -49,7 +49,7 @@ jobs:
           git push
 
       - name: Move tag on release
-        if: ${{ startsWith(github.ref, 'ref/tags/v') && ( github.event_name == 'workflow_dispath' || steps.changes.outputs.man == 'true' || steps.changes.outputs.autotools }} ) }}
+        if: ${{ startsWith(github.ref, 'ref/tags/v') && ( github.event_name == 'workflow_dispath' || steps.changes.outputs.man == 'true' || steps.changes.outputs.autotools ) }}
         run: |-
           git tag -fa "${{ github.ref_name }}" -m "Update ${{ github.ref_name }} tag"
           git push origin "${{ github.ref_name }}" --force
