@@ -13,8 +13,10 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
       - name: Set version number (when publishing)
-        if: startsWith(github.ref, 'ref/tags/v')
+        if: ${{ startsWith(github.ref, 'ref/tags/v') }}
         run: |
           python3 ${{ github.workspace }}/.github/update_version.py --version ${{ github.ref_name }}
       - uses: dorny/paths-filter@v2
@@ -38,10 +40,16 @@ jobs:
           ./autogen.sh
         if: ${{ github.event_name == 'workflow_dispath' || steps.changes.outputs.autotools == 'true' }}
       - name: Commit changes
-        if: ${{ github.event_name == 'workflow_dispath' || steps.changes.outputs.man == 'true' || steps.changes.outputs.autotools }}
+        if: ${{ github.event_name == 'workflow_dispath' || steps.changes.outputs.man == 'true' || steps.changes.outputs.autotools || ${{ startsWith(github.ref, 'ref/tags/v') }}
         run: |-
           for r in $(git remote) ; do git remote get-url --all $r ; done
           git config user.name github-actions
           git config user.email github-actions@github.com
           git commit -a -m "ci: Github Action Generate Files"
           git push
+
+      - name: Move tag on release
+        if: ${{ startsWith(github.ref, 'ref/tags/v') && ( github.event_name == 'workflow_dispath' || steps.changes.outputs.man == 'true' || steps.changes.outputs.autotools }} ) }}
+        run: |-
+          git tag -fa "${{ github.ref_name }}" -m "Update ${{ github.ref_name }} tag"
+          git push origin "${{ github.ref_name }}" --force
