@@ -70,7 +70,7 @@ static const char *abstract[] = {
 };
 
 static const char usage[] =
-	"Usage: shc [-e date] [-m addr] [-i iopt] [-x cmd] [-l lopt] [-o outfile] [-rvDSUHCAB2h] -f script";
+	"Usage: shc [-e date] [-m addr] [-i iopt] [-x cmd] [-l lopt] [-o outfile] [-rvDSUHPCAB2h] -f script";
 
 static const char *help[] = {
 	"",
@@ -88,6 +88,7 @@ static const char *help[] = {
 	"    -U     Make binary untraceable [no]",
 	"    -H     Hardening : extra security protection [no]",
 	"           Require bourne shell (sh) and parameters are not supported",
+	"    -P     Submit script as a pipe [no]",
 	"    -C     Display license and exit",
 	"    -A     Display abstract and exit",
 	"    -B     Compile for busybox",
@@ -152,6 +153,9 @@ static int MMAP2_flag = 0;
 static const char BUSYBOXON_line[] =
 	"#define BUSYBOXON	%d	/* Define as 1 to enable work with busybox */\n";
 static int BUSYBOXON_flag = 0;
+static const char PIPESCRIPT_line[] =
+	"#define PIPESCRIPT	%d	/* Define as 1 to submit script as a pipe */\n";
+static int PIPESCRIPT_flag = 0;
 
 static const char *RTC[] = {
 	"",
@@ -239,6 +243,7 @@ static const char *RTC[] = {
 	"",
 	"#include <sys/stat.h>",
 	"#include <sys/types.h>",
+	"#include <sys/wait.h>",
 	"",
 	"#include <errno.h>",
 	"#include <stdio.h>",
@@ -246,6 +251,7 @@ static const char *RTC[] = {
 	"#include <string.h>",
 	"#include <time.h>",
 	"#include <unistd.h>",
+	"#include <fcntl.h>",
 	"",
 	"/* 'Alleged RC4' */",
 	"",
@@ -282,7 +288,7 @@ static const char *RTC[] = {
 	"}",
 	"",
 	"/*",
-	" * Encrypt data. ",
+	" * Encrypt data.",
 	" */",
 	"void arc4(void * str, int len)",
 	"{",
@@ -370,7 +376,7 @@ static const char *RTC[] = {
 	"        perror(\"Could not start seccomp:\");",
 	"        exit(1);",
 	"    }",
-	"} ",
+	"}",
 	"/* End Seccomp Sandboxing Init */",
 	"",
 	"void shc_x_file() {",
@@ -457,7 +463,7 @@ static const char *RTC[] = {
 	"#endif /* HARDENING */",
 	"",
 	"/*",
-	" * Key with file invariants. ",
+	" * Key with file invariants.",
 	" */",
 	"int key_with_file(char * file)",
 	"{",
@@ -489,7 +495,7 @@ static const char *RTC[] = {
 	"	fprintf(stderr, \"argc=%d\\n\", argc);",
 	"	if (!argv) {",
 	"		fprintf(stderr, \"argv=<null>\\n\");",
-	"	} else { ",
+	"	} else {",
 	"		for (i = 0; i <= argc ; i++)",
 	"			fprintf(stderr, \"argv[%d]=%.60s\\n\", i, argv[i] ? argv[i] : \"<null>\");",
 	"	}",
@@ -567,19 +573,19 @@ static const char *RTC[] = {
 	"    char name[256] = {0};",
 	"    gets_process_name(pid, name);",
 	"",
-	"    if (   (strcmp(name, \"bash\") != 0) ",
-	"        && (strcmp(name, \"/bin/bash\") != 0) ",
-	"        && (strcmp(name, \"sh\") != 0) ",
-	"        && (strcmp(name, \"/bin/sh\") != 0) ",
-	"        && (strcmp(name, \"sudo\") != 0) ",
-	"        && (strcmp(name, \"/bin/sudo\") != 0) ",
+	"    if (   (strcmp(name, \"bash\") != 0)",
+	"        && (strcmp(name, \"/bin/bash\") != 0)",
+	"        && (strcmp(name, \"sh\") != 0)",
+	"        && (strcmp(name, \"/bin/sh\") != 0)",
+	"        && (strcmp(name, \"sudo\") != 0)",
+	"        && (strcmp(name, \"/bin/sudo\") != 0)",
 	"        && (strcmp(name, \"/usr/bin/sudo\") != 0)",
-	"        && (strcmp(name, \"gksudo\") != 0) ",
-	"        && (strcmp(name, \"/bin/gksudo\") != 0) ",
-	"        && (strcmp(name, \"/usr/bin/gksudo\") != 0) ",
-	"        && (strcmp(name, \"kdesu\") != 0) ",
-	"        && (strcmp(name, \"/bin/kdesu\") != 0) ",
-	"        && (strcmp(name, \"/usr/bin/kdesu\") != 0) ",
+	"        && (strcmp(name, \"gksudo\") != 0)",
+	"        && (strcmp(name, \"/bin/gksudo\") != 0)",
+	"        && (strcmp(name, \"/usr/bin/gksudo\") != 0)",
+	"        && (strcmp(name, \"kdesu\") != 0)",
+	"        && (strcmp(name, \"/bin/kdesu\") != 0)",
+	"        && (strcmp(name, \"/usr/bin/kdesu\") != 0)",
 	"       )",
 	"    {",
 	"        printf(\"Operation not permitted\\n\");",
@@ -625,14 +631,15 @@ static const char *RTC[] = {
 	"#endif",
 	"		close(0);",
 	"		mine = !open(proc, O_RDWR|O_EXCL);",
-	"		if (!mine && errno != EBUSY)",
-	"			mine = !ptrace(PT_ATTACHEXC, pid, 0, 0);",
-	"		if (mine) {",
-	"			kill(pid, SIGCONT);",
-	"		} else {",
-/*"			fprintf(stderr, \"%s is being traced!\\n\", argv0);",*/
+	"		if (!mine && errno != EBUSY) {",
+	"			if((mine=2*!ptrace(PT_ATTACHEXC, pid, 0, 0)))wait(0);",
+	"		}",
+	"		if (!mine) {",
 	"			perror(argv0);",
 	"			kill(pid, SIGKILL);",
+/*"			fprintf(stderr, \"%s is being traced!\\n\", argv0);",*/
+	"		} else if(mine>1) {",
+	"			ptrace(PTRACE_DETACH, pid, 0, 0);",
 	"		}",
 	"		_exit(mine);",
 	"	case -1:",
@@ -717,6 +724,38 @@ static const char *RTC[] = {
 	"#else",
 	"	varg[j++] = argv[0];		/* My own name at execution */",
 	"#endif",
+	"	if(PIPESCRIPT && ret) {",
+	"		char 	tnm[128];",
+	"		int	l=100;",
+	"		for(i=getpid(); l--; ) {",
+	"			i = (i*1436856257)%1436856259;",
+	"			sprintf(tnm, \"/tmp/%08x\", i);",
+	"			if(!mkfifo(tnm, S_IWUSR|S_IRUSR)) break;",
+	"		}",
+	"		if(l<0) exit(1);",
+	"		if((i=fork())) {",
+	"			waitpid(i, 0, 0);",
+	"		} else if(fork()) {",
+	"			_exit(0);",
+	"		} else {",
+	"			int	w,",
+	"				fd;",
+	"			close(0);",
+	"			close(1);",
+	"			close(2);",
+	"			fd = open(tnm, O_WRONLY);",
+	"			unlink(tnm);",
+	"			for(i=0, l=strlen(text); i<l; i+=w) {",
+	"				if((w=l-i)>BUFSIZ) w=BUFSIZ;",
+	"				if((w=write(fd, text+i, w))<0) break;",
+	"				memset(text+i, 0, w);",
+	"			}",
+	"			_exit(0);",
+	"		}",
+	"		varg[j++] = tnm;",
+	"		i = (ret > 1) ? ret : 1;/* Args numbering correction */",
+	"		goto xec;",
+	"	}",
 	"	if (ret && *opts)",
 	"		varg[j++] = opts;	/* Options on 1st line of code */",
 	"	if (*inlo)",
@@ -725,6 +764,7 @@ static const char *RTC[] = {
 	"	if (*lsto)",
 	"		varg[j++] = lsto;	/* Option meaning last option */",
 	"	i = (ret > 1) ? ret : 0;	/* Args numbering correction */",
+	"xec:",
 	"	while (i < argc)",
 	"		varg[j++] = argv[i++];	/* Main run-time arguments */",
 	"	varg[j] = 0;			/* NULL terminated array */",
@@ -763,7 +803,7 @@ static const char *RTC[] = {
 static int parse_an_arg(int argc, char *argv[])
 {
 	extern char *optarg;
-	const char *opts = "e:m:f:i:x:l:o:rvDSUHCAB2h";
+	const char *opts = "e:m:f:i:x:l:o:rvDSUHPCAB2h";
 	struct tm tmp[1];
 	time_t expdate;
 	int cnt, l;
@@ -826,6 +866,9 @@ static int parse_an_arg(int argc, char *argv[])
 		break;
 	case 'U':
 		TRACEABLE_flag = 0;
+		break;
+	case 'P':
+		PIPESCRIPT_flag = 1;
 		break;
 	case 'H':
 		HARDENING_flag = 1;
@@ -1013,8 +1056,12 @@ struct {
 	{ "Rsh", "-c", "", "exec '%s' \"$@\"" },    /* AIX_nvi */
 	{ "ksh", "-c", "", "exec '%s' \"$@\"" },    /* OK on Solaris, AIX and Linux (THX <bryan.hogan@dstintl.com>) */
 	{ "tsh", "-c", "--", "exec '%s' \"$@\"" },  /* AIX */
-	{ "csh", "-c", "-b", "exec '%s' $argv" },   /* AIX: No file for $0 */
+	// { "ash", "-c", "--", "exec '%s' \"$@\"" },  /* Linux - deprecated */
+	{ "csh", "-c", "-b", "exec '%s' $argv" },  /* AIX: No file for $0 */
 	{ "tcsh", "-c", "-b", "exec '%s' $argv" },
+	{ "python", "-c", "", "import os,sys;os.execv('%s',sys.argv)" },
+	{ "python2", "-c", "", "import os,sys;os.execv('%s',sys.argv)" },
+	{ "python3", "-c", "", "import os,sys;os.execv('%s',sys.argv)" },
 	{ NULL, NULL, NULL, NULL },
 };
 
@@ -1147,7 +1194,7 @@ char*read_script(char *file)
 	l_text[l] = '\0';
 
 	/* Check current System ARG_MAX limit. */
-	if (l > 0.80 * (cnt = sysconf(_SC_ARG_MAX))) {
+	if (!PIPESCRIPT_flag && (l > 0.80 * (cnt = sysconf(_SC_ARG_MAX)))) {
 		fprintf(stderr, "%s: WARNING!!\n"
 			"   Scripts of length near to (or higher than) the current System limit on\n"
 			"   \"maximum size of arguments to EXEC\", could comprise its binary execution.\n"
@@ -1353,6 +1400,7 @@ int write_C(char *file, char *argv[])
 	fprintf(o, SETUID_line, SETUID_flag);
 	fprintf(o, DEBUGEXEC_line, DEBUGEXEC_flag);
 	fprintf(o, TRACEABLE_line, TRACEABLE_flag);
+	fprintf(o, PIPESCRIPT_line, PIPESCRIPT_flag);
 	fprintf(o, HARDENING_line, HARDENING_flag);
 	fprintf(o, BUSYBOXON_line, BUSYBOXON_flag);
 	fprintf(o, MMAP2_line, MMAP2_flag);
