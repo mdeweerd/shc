@@ -4,11 +4,19 @@ on:
   push:
     paths: [man.md, aclocal.m4, configure.ac]
   workflow_dispatch:
+  workflow_call:
+  release:
+    types: [published]
+
 jobs:
   convert_via_pandoc:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Set version number (when publishing)
+        if: startsWith(github.ref, 'ref/tags/v')
+        run: |
+          python3 ${{ github.workspace }}/.github/update_version.py --version ${{ github.ref_name }}
       - uses: dorny/paths-filter@v2
         id: changes
         with:

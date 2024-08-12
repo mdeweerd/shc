@@ -7,7 +7,7 @@ dynamic = ["version"]
 
 [tool.codespell]
 ignore-words-list = """
-stdio,master,scrpt
+stdio,master,scrpt,weerd
 """
 skip = """./.*,*/.metadata,*.xml,configure,*Makefile*,config*,*.m4,man.html"""
 quiet-level=2
