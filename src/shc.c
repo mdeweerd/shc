@@ -728,7 +728,7 @@ static const char * RTC[] = {
 "		for(r=getpid(); l--; ) {",
 "			r = (r*1436856257)%1436856259;",
 "			sprintf(tnm, \"/tmp/%08x\", r);",
-"			if(!mkfifo(tnm, S_IWUSR|S_IRUSR)) break;",
+"			if(!mkfifo(tnm, S_IWUSR|S_IRUSR)) { break; }",
 "		}",
 "		if(l<0) exit(1);",
 "		if((i=fork())) {",
