@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
       - name: Set version number (when publishing)
         if: startsWith(github.ref, 'ref/tags/v')
         run: |
@@ -45,3 +47,9 @@ jobs:
           git config user.email github-actions@github.com
           git commit -a -m "ci: Github Action Generate Files"
           git push
+
+      - name: Move tag on release
+        if: ${{ startsWith(github.ref, 'ref/tags/v') && ( ${{ github.event_name == 'workflow_dispath' || steps.changes.outputs.man == 'true' || steps.changes.outputs.autotools }} ) }}
+        run: |-
+          git tag -fa "${{ github.ref_name }}" -m "Update ${{ github.ref_name }} tag"
+          git push origin "${{ github.ref_name }}" --force
