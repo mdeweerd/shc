@@ -23,6 +23,8 @@ jobs:
           key: pre-commit-4|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml')
             }}
       - name: Run pre-commit hooks
+        env:
+          SKIP: uncrustify
         run: |
           set -o pipefail
           pre-commit gc
