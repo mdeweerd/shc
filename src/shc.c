@@ -721,6 +721,7 @@ static const char * RTC[] = {
 "#else",
 "	varg[j++] = argv[0];		/* My own name at execution */",
 "#endif",
+"	setenv(\"SHC_ARGV0\", argv[0], 1);",
 "	if(PIPESCRIPT && ret) {",
 "		char 	tnm[128];",
 "		int	l=100;",
