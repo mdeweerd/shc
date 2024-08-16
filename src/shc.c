@@ -722,6 +722,8 @@ static const char * RTC[] = {
 "	varg[j++] = argv[0];		/* My own name at execution */",
 "#endif",
 "	setenv(\"SHC_ARGV0\", argv[0], 1);",
+"	char pids[16]; snprintf(pids, sizeof(pids), \"%d\", getpid());",
+"	setenv(\"SHC_PID\", pids, 1);",
 "	if(PIPESCRIPT && ret) {",
 "		char 	tnm[128];",
 "		int	l=100;",
