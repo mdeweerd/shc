@@ -127,6 +127,7 @@ static char * mail = "Please contact your provider jahidulhamid@yahoo.com";
 static char   rlax[1];
 static char * shll;
 static char * inlo;
+static char * pfmt;
 static char * xecc;
 static char * lsto;
 static char * opts;
@@ -668,6 +669,7 @@ static const char * RTC[] = {
 "		return msg1;",
 "	arc4(shll, shll_z);",
 "	arc4(inlo, inlo_z);",
+"	arc4(pfmt, pfmt_z);",
 "	arc4(xecc, xecc_z);",
 "	arc4(lsto, lsto_z);",
 "	arc4(tst1, tst1_z);",
@@ -724,8 +726,8 @@ static const char * RTC[] = {
 "	setenv(\"SHC_ARGV0\", argv[0], 1);",
 "	char pids[16]; snprintf(pids, sizeof(pids), \"%d\", getpid());",
 "	setenv(\"SHC_PID\", pids, 1);",
+"	char 	tnm[128];",
 "	if(PIPESCRIPT && ret) {",
-"		char 	tnm[128];",
 "		int	l=100;",
 "		unsigned r;",
 "		for(r=getpid(); l--; ) {",
@@ -753,19 +755,22 @@ static const char * RTC[] = {
 "			}",
 "			_exit(0);",
 "		}",
-"		varg[j++] = tnm;",
 "		i = (ret > 1) ? ret : 1;/* Args numbering correction */",
-"		goto xec;",
 "	}",
 "	if (ret && *opts)",
 "		varg[j++] = opts;	/* Options on 1st line of code */",
 "	if (*inlo)",
 "		varg[j++] = inlo;	/* Option introducing inline code */",
-"	varg[j++] = scrpt;		/* The script itself */",
+"	char cmd[128];",
+"	if(PIPESCRIPT && ret) {",
+"		snprintf(cmd, sizeof(cmd), pfmt, tnm);"
+"		varg[j++] = cmd;"
+"	} else {",
+"		varg[j++] = scrpt;		/* The script itself */",
+"	}",
 "	if (*lsto)",
 "		varg[j++] = lsto;	/* Option meaning last option */",
 "	i = (ret > 1) ? ret : 0;	/* Args numbering correction */",
-"xec:",
 "	while (i < argc)",
 "		varg[j++] = argv[i++];	/* Main run-time arguments */",
 "	varg[j] = 0;			/* NULL terminated array */",
@@ -1038,23 +1043,24 @@ struct {
 	char * inlo;
 	char * lsto;
 	char * xecc;
+	char * pfmt;
 } shellsDB[] = {
-	{ "perl", "-e", "--", "exec('%s',@ARGV);" },
-	{ "rc",   "-c", "",   "builtin exec %s $*" },
-	{ "sh",   "-c", "",   "exec '%s' \"$@\"" }, /* IRIX_nvi */
-	{ "dash", "-c", "",   "exec '%s' \"$@\"" },
-	{ "bash", "-c", "",   "exec '%s' \"$@\"" },
-	{ "zsh",  "-c", "",   "exec '%s' \"$@\"" },
-	{ "bsh",  "-c", "",   "exec '%s' \"$@\"" }, /* AIX_nvi */
-	{ "Rsh",  "-c", "",   "exec '%s' \"$@\"" }, /* AIX_nvi */
-	{ "ksh",  "-c", "",   "exec '%s' \"$@\"" }, /* OK on Solaris, AIX and Linux (THX <bryan.hogan@dstintl.com>) */
-	{ "tsh",  "-c", "--", "exec '%s' \"$@\"" }, /* AIX */
-	{ "ash",  "-c", "--", "exec '%s' \"$@\"" }, /* Linux */
-	{ "csh",  "-c", "-b", "exec '%s' $argv" }, /* AIX: No file for $0 */
-	{ "tcsh", "-c", "-b", "exec '%s' $argv" },
-	{ "python", "-c", "", "import os,sys;os.execv('%s',sys.argv)" },
-	{ "python2", "-c", "", "import os,sys;os.execv('%s',sys.argv)" },
-	{ "python3", "-c", "", "import os,sys;os.execv('%s',sys.argv)" },
+	{ "perl", "-e", "--", "exec('%s',@ARGV);", "" },
+	{ "rc",   "-c", "",   "builtin exec %s $*", "" },
+	{ "sh",   "-c", "",   "exec '%s' \"$@\"", ". '%s'" }, /* IRIX_nvi */
+	{ "dash", "-c", "",   "exec '%s' \"$@\"", ". '%s'" },
+	{ "bash", "-c", "",   "exec '%s' \"$@\"", ". '%s'" },
+	{ "zsh",  "-c", "",   "exec '%s' \"$@\"", ". '%s'" },
+	{ "bsh",  "-c", "",   "exec '%s' \"$@\"", ". '%s'" }, /* AIX_nvi */
+	{ "Rsh",  "-c", "",   "exec '%s' \"$@\"", ". '%s'" }, /* AIX_nvi */
+	{ "ksh",  "-c", "",   "exec '%s' \"$@\"", ". '%s'" }, /* OK on Solaris, AIX and Linux (THX <bryan.hogan@dstintl.com>) */
+	{ "tsh",  "-c", "--", "exec '%s' \"$@\"", ". '%s'" }, /* AIX */
+	{ "ash",  "-c", "--", "exec '%s' \"$@\"", ". '%s'" }, /* Linux */
+	{ "csh",  "-c", "-b", "exec '%s' $argv", "source '%s'" }, /* AIX: No file for $0 */
+	{ "tcsh", "-c", "-b", "exec '%s' $argv", "source '%s'" },
+	{ "python", "-c", "", "import os,sys;os.execv('%s',sys.argv)", "" },
+	{ "python2", "-c", "", "import os,sys;os.execv('%s',sys.argv)", "" },
+	{ "python3", "-c", "", "import os,sys;os.execv('%s',sys.argv)", "" },
 	{ NULL,   NULL, NULL, NULL },
 };
 
@@ -1098,6 +1104,8 @@ int eval_shell(char * text)
 		if(!strcmp(ptr, shellsDB[i].shll)) {
 			if (!inlo)
 				inlo = strdup(shellsDB[i].inlo);
+			if (!pfmt)
+				pfmt = strdup(shellsDB[i].pfmt);
 			if (!xecc)
 				xecc = strdup(shellsDB[i].xecc);
 			if (!lsto)
@@ -1241,6 +1249,7 @@ int write_C(char * file, char * argv[])
 	char* kwsh = strdup(shll);
 	int shll_z = strlen(shll) + 1;
 	int inlo_z = strlen(inlo) + 1;
+	int pfmt_z = strlen(pfmt) + 1;
 	int xecc_z = strlen(xecc) + 1;
 	int lsto_z = strlen(lsto) + 1;
 	char* tst1 = strdup("location has changed!");
@@ -1273,6 +1282,7 @@ int write_C(char * file, char * argv[])
 	arc4(date, date_z); numd++;
 	arc4(shll, shll_z); numd++;
 	arc4(inlo, inlo_z); numd++;
+	arc4(pfmt, pfmt_z); numd++;
 	arc4(xecc, xecc_z); numd++;
 	arc4(lsto, lsto_z); numd++;
 	arc4(tst1, tst1_z); numd++;
@@ -1309,7 +1319,7 @@ int write_C(char * file, char * argv[])
 	fprintf(o, "static  char data [] = ");
 	do {
 		done = 0;
-		indx = rand_mod(15);
+		indx = rand_mod(16);
 		do {
 			switch (indx) {
 			case  0: if (pswd_z>=0) {prnt_array(o, pswd, "pswd", pswd_z, 0); pswd_z=done=-1; break;}
@@ -1327,6 +1337,7 @@ int write_C(char * file, char * argv[])
 			case 12: if (text_z>=0) {prnt_array(o, text, "text", text_z, 0); text_z=done=-1; break;}
 			case 13: if (tst2_z>=0) {prnt_array(o, tst2, "tst2", tst2_z, 0); tst2_z=done=-1; break;}
 			case 14: if (chk2_z>=0) {prnt_array(o, chk2, "chk2", chk2_z, 0); chk2_z=done=-1; break;}
+			case 15: if (pfmt_z>=0) {prnt_array(o, pfmt, "pfmt", pfmt_z, 0); pfmt_z=done=-1; break;}
 			}
 			indx = 0;
 		} while (!done);
