@@ -1,6 +1,6 @@
 #!/bin/bash
 
-shells=('/bin/sh' '/bin/dash' '/bin/bash' '/bin/ksh' '/bin/zsh' '/usr/bin/tcsh' '/bin/csh' '/usr/bin/rc' '/usr/bin/python' '/usr/bin/python2' '/usr/bin/python3')
+shells=('/bin/sh' '/bin/dash' '/bin/bash' '/bin/ksh' '/bin/zsh' '/usr/bin/tcsh' '/bin/csh' '/usr/bin/rc' '/usr/bin/python' '/usr/bin/python2' '/usr/bin/python3' '/usr/bin/perl')
 ## Install: sudo apt install dash bash ksh zsh tcsh csh rc
 
 check_opts=('' '-r' '-v' '-D' '-S' '-P')
@@ -39,25 +39,35 @@ for shell in "${shells[@]}"; do
         tmpa="$tmpd/a.out"
         tmpl="$tmpd/a.log"
         out=""
+        expected=${shell}': Hello World sn:'${tmpa}' fp:first sp:second'
         {
             echo '#!'"$shell"
-            if [ "${shell#*pyth}" = "$shell" ] ; then
-                echo "echo 'Hello World fp:'\$1 sp:\$2"
+            if [ "${shell#*/pyth}" != "$shell" ] ; then
+                # Python
+                echo 'import sys; sys.stdout.write(("'${shell}': Hello World sn:%s fp:%s sp:%s" % (sys.argv[0],sys.argv[1],sys.argv[2]))+"\n")'
+            elif [ "${shell#*/rc}" != "$shell" ] ; then
+                # rc
+                echo 'echo '${shell}': Hello World sn:$0 fp:$1 sp:$2'
+            elif [ "${shell#*/perl}" != "$shell" ] ; then
+                # perl
+                echo 'print "'${shell}': Hello World sn:$0 fp:$ARGV[0] sp:$ARGV[1]";'
+            elif [ "${shell#*/csh}" != "$shell" ] ; then
+                # csh - can not forge $0
+                echo 'echo "'${shell}:' Hello World fp:$1 sp:$2"'
+                expected=${shell}': Hello World fp:first sp:second'
             else
-                echo 'import sys'
-                echo 'sys.stdout.write(("Hello World fp:%s sp:%s" % (sys.argv[1],sys.argv[2]))+"\n")'
+                echo 'echo "'${shell}:' Hello World sn:$0 fp:$1 sp:$2"'
             fi
         } > "$tmpf"
         # shellcheck disable=SC2086
         "$shc" $opt -f "$tmpf" -o "$tmpa"
         # ls -la "$tmpa"
 
-        expected='Hello World fp:first sp:second'
         if [ "$opt" = "-D" ] ; then
             # Hide debug output
             out=$("$tmpa" first second 2>/dev/null)
-            outdbg=$("$tmpa" first second 2>1)
             # TODO: compare dbg output
+            # outdbg=$("$tmpa" first second 2>1)
         else
             out=$("$tmpa" first second 2>&1)
         fi
