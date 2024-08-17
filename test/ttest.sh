@@ -1,7 +1,7 @@
 #!/bin/bash
-
-shells=('/bin/sh' '/bin/dash' '/bin/bash' '/bin/ash' '/bin/ksh' '/bin/zsh' '/usr/bin/tcsh' '/bin/csh' '/usr/bin/rc' '/usr/bin/python' '/usr/bin/python2' '/usr/bin/python3')
-## Install: sudo apt install dash bash ash ksh zsh tcsh csh rc
+# shellcheck disable=2016,2028
+shells=('/bin/sh' '/bin/dash' '/bin/bash' '/bin/ksh' '/bin/zsh' '/usr/bin/tcsh' '/bin/csh' '/usr/bin/rc' '/usr/bin/python' '/usr/bin/python2' '/usr/bin/python3' '/usr/bin/perl')
+## Install: sudo apt install dash bash ksh zsh tcsh csh rc
 
 check_opts=('' '-r' '-v' '-D' '-S' '-P')
 
@@ -14,36 +14,80 @@ txtrst='\e[0m'    # Text Reset
 stat=0
 pc=0
 fc=0
+# Comma separated list of shells that are skipped
+SKIP=",${SKIP},ash,"
 echo
-echo "== Running tests ..."
-for shell in ${shells[@]}; do
-    [ -x "$shell" ] || continue
+echo "== Running tests ... (Skip expression: $SKIP)"
+for shell in "${shells[@]}"; do
+    if [ "${SKIP#*,"${shell##*/}",}" != "$SKIP" ] ; then
+        echo    "===================================================="
+        echo -e "=== $shell                :SKIPPED"
+        echo    "===================================================="
+        continue
+    fi
+    if [ ! -x "$shell" ] ; then
+        echo    "===================================================="
+        echo -e "=== $shell                :${txtred}MISSING${txtrst}"
+        echo    "===================================================="
+        ((fc++))
+        stat=1
+        continue
+    fi
     for opt in "${check_opts[@]}"; do
-        tmpd=$(mktemp -d)
-        tmpf="$tmpd/test.$(basename $shell)"
-        echo '#!'"$shell" >"$tmpf"
-	if [ ${shell#*pyth} = "$shell" ]; then
-		echo "echo 'Hello World fp:'\$1 sp:\$2"
-	else
-		echo 'import sys'
-		echo 'sys.stdout.write(("Hello World fp:%s sp:%s" % (sys.argv[1],sys.argv[2]))+"\n")'
-	fi >> "$tmpf"
-        "$shc" $opt -f "$tmpf" -o "$tmpd/a.out"
-        out=$("$tmpd/a.out" first second)
-        #~ echo "  Output: $out"
-        if [[ "$out" = 'Hello World fp:first sp:second' ]]; then
+        tmpd=$(mktemp -d /tmp/shc.XXX.tst)
+        tmpf="$tmpd/test.$(basename "$shell")"
+        tmpa="$tmpd/a.out"
+        tmpl="$tmpd/a.log"
+        out=""
+        expected=${shell}': Hello World sn:'${tmpa}' fp:first sp:second'
+        {
+            echo '#!'"$shell"
+            if [ "${shell#*/pyth}" != "$shell" ] ; then
+                # Python
+                echo 'import sys; sys.stdout.write(("'"${shell}"': Hello World sn:%s fp:%s sp:%s" % (sys.argv[0],sys.argv[1],sys.argv[2]))+"\n")'
+            elif [ "${shell#*/rc}" != "$shell" ] ; then
+                # rc
+                echo 'echo '"${shell}"': Hello World sn:$0 fp:$1 sp:$2'
+            elif [ "${shell#*/perl}" != "$shell" ] ; then
+                # perl
+                echo 'print "'"${shell}"': Hello World sn:$0 fp:$ARGV[0] sp:$ARGV[1]";'
+            elif [ "${shell#*/csh}" != "$shell" ] ; then
+                # csh - can not forge $0
+                echo 'echo "'"${shell}":' Hello World fp:$1 sp:$2"'
+                expected=${shell}': Hello World fp:first sp:second'
+            else
+                echo 'echo "'"${shell}":' Hello World sn:$0 fp:$1 sp:$2"'
+            fi
+        } > "$tmpf"
+        # shellcheck disable=SC2086
+        "$shc" $opt -f "$tmpf" -o "$tmpa"
+        # ls -la "$tmpa"
+
+        if [ "$opt" = "-D" ] ; then
+            # Hide debug output
+            out=$("$tmpa" first second 2>/dev/null)
+            # TODO: compare dbg output
+            # outdbg=$("$tmpa" first second 2>1)
+        else
+            out=$("$tmpa" first second 2>&1)
+        fi
+        if [[ "$out" = "$expected" ]]; then
             echo    "===================================================="
             echo -e "=== $shell [with shc $opt]: ${txtgrn}PASSED${txtrst}"
             echo    "===================================================="
             ((pc++))
+            rm -rf "$tmpd"
         else
             echo    "===================================================="
             echo -e "=== $shell [with shc $opt]: ${txtred}FAILED${txtrst}"
             echo    "===================================================="
+            echo "  Files kept in '$tmpd'"
+            printf "*** Expected Output:\n%s\n" "$expected"
+            printf "*** Output:\n%s\n*** End of output\n" "$out"
+            echo "$out" > "$tmpl"
             stat=1
             ((fc++))
         fi
-        rm -r "$tmpd"
     done
 done
 
@@ -68,4 +112,7 @@ echo -e "$ft: $fc"
 echo "------------"
 echo
 
+if ((stat>0)); then
+    echo "EXIT with code $stat"
+fi
 exit $stat
