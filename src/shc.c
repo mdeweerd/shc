@@ -797,13 +797,13 @@ static int parse_an_arg(int argc, char * argv[])
 		file = optarg;
 		break;
 	case 'i':
-		inlo = optarg;
+		inlo = strdup(optarg);  // Gets encrypted
 		break;
 	case 'x':
-		xecc = optarg;
+		xecc = strdup(optarg);  // Gets encrypted
 		break;
 	case 'l':
-		lsto = optarg;
+		lsto = strdup(optarg);  // Gets encrypted
 		break;
 	case 'o':
 		file2 = optarg;
@@ -1181,7 +1181,7 @@ void dump_array(FILE * o, void * ptr, char * name, int l, char * cast)
 	prnt_array(o, ptr, name, l, cast);
 }
 
-int write_C(char * file, int argc, char * argv[])
+int write_C(char *file, int argc, char *argv[])
 {
 	char pswd[256];
 	int pswd_z = sizeof(pswd);
