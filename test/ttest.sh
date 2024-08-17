@@ -19,7 +19,8 @@ SKIP=",${SKIP},ash,"
 echo
 echo "== Running tests ... (Skip expression: $SKIP)"
 for shell in "${shells[@]}"; do
-    if [ "${SKIP#*,"${shell##*/}",}" != "$SKIP" ] ; then
+    BASESHELL=${shell##*/}
+    if [ "${SKIP#*,"${BASESHELL}",}" != "$SKIP" ] ; then
         echo    "===================================================="
         echo -e "=== $shell                :SKIPPED"
         echo    "===================================================="
@@ -34,9 +35,9 @@ for shell in "${shells[@]}"; do
         continue
     fi
     for opt in "${check_opts[@]}"; do
-        tmpd=$(mktemp -d /tmp/shc.XXX.tst)
+        tmpd=$(mktemp -d "/tmp/shc.${BASESHELL}${opt}.XXX.tst")
         tmpf="$tmpd/test.$(basename "$shell")"
-        tmpa="$tmpd/a.out"
+        tmpa="$tmpd/a.out.${BASESHELL}$opt"
         tmpl="$tmpd/a.log"
         out=""
         expected=${shell}': Hello World sn:'${tmpa}' fp:first sp:second'
