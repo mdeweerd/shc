@@ -21,9 +21,9 @@ static const char version[] = "Version 4.0.3";
 static const char subject[] = "Generic Shell Script Compiler";
 static const char cpright[] = "GNU GPL Version 3";
 static const struct { const char * f, * s, * e; }
-	provider = { "Md Jahidul", "Hamid", "<jahidulhamid@yahoo.com>" };          
+	provider = { "Md Jahidul", "Hamid", "<jahidulhamid@yahoo.com>" };
 
-/* 
+/*
 static const struct { const char * f, * s, * e; }
 	author = { "Francisco", "Garcia", "<frosal@fi.upm.es>" };
 */
@@ -67,7 +67,7 @@ static const char * abstract[] = {
 "",
 0};
 
-static const char usage[] = 
+static const char usage[] =
 "Usage: shc [-e date] [-m addr] [-i iopt] [-x cmd] [-l lopt] [-o outfile] [-rvDSUHPCAB2h] -f script";
 
 static const char * help[] = {
@@ -87,6 +87,7 @@ static const char * help[] = {
 "    -H     Hardening : extra security protection [no]",
 "           Require bourne shell (sh) and parameters are not supported",
 "    -P     Submit script as a pipe [no]",
+"    -0     Fix handling of argv0 [no]",
 "    -C     Display license and exit",
 "    -A     Display abstract and exit",
 "    -B     Compile for busybox",
@@ -154,6 +155,9 @@ static int BUSYBOXON_flag = 0;
 static const char PIPESCRIPT_line[] =
 "#define PIPESCRIPT	%d	/* Define as 1 to submit script as a pipe */\n";
 static int PIPESCRIPT_flag = 0;
+static const char FIXARGV0_line[] =
+"#define FIXARGV0	%d	/* Define as 1 fix handling of ARGV0 */\n";
+static int FIXARGV0_flag = 0;
 
 static const char * RTC[] = {
 "",
@@ -407,10 +411,10 @@ static const char * RTC[] = {
 "	unsigned char tmp, * ptr = (unsigned char *)tmp2;",
 "    int lentmp = len;",
 "    int pid, status;",
-"    pid = fork();",
 "",
 "    shc_x_file();",
 "    if (make()) {exit(1);}",
+"    pid = fork();",
 "",
 "    setenv(\"LD_PRELOAD\",\"/tmp/shc_x.so\",1);",
 "",
@@ -495,7 +499,7 @@ static const char * RTC[] = {
 "		fprintf(stderr, \"argv=<null>\\n\");",
 "	} else { ",
 "		for (i = 0; i <= argc ; i++)",
-"			fprintf(stderr, \"argv[%d]=%.60s\\n\", i, argv[i] ? argv[i] : \"<null>\");",
+"			fprintf(stderr, \"argv[%d]=%s\\n\", i, argv[i] ? argv[i] : \"<null>\");",
 "	}",
 "}",
 "#endif /* DEBUGEXEC */",
@@ -727,6 +731,7 @@ static const char * RTC[] = {
 "	char pids[16]; snprintf(pids, sizeof(pids), \"%d\", getpid());",
 "	setenv(\"SHC_PID\", pids, 1);",
 "	char 	tnm[128];",
+"	char	i0=0;",
 "	if(PIPESCRIPT && ret) {",
 "		int	l=100;",
 "		unsigned r;",
@@ -755,22 +760,27 @@ static const char * RTC[] = {
 "			}",
 "			_exit(0);",
 "		}",
-"		i = (ret > 1) ? ret : 1;/* Args numbering correction */",
+"		if(!FIXARGV0) {",
+"			varg[j++] = tnm;",
+"			i0=1;",
+"			goto xec;",
+"		}",
 "	}",
 "	if (ret && *opts)",
 "		varg[j++] = opts;	/* Options on 1st line of code */",
 "	if (*inlo)",
 "		varg[j++] = inlo;	/* Option introducing inline code */",
-"	char cmd[128];",
+"	char cmd[256];",
 "	if(PIPESCRIPT && ret) {",
-"		snprintf(cmd, sizeof(cmd), pfmt, tnm);"
+"		snprintf(cmd, sizeof(cmd), pfmt, argv[0], tnm);"
 "		varg[j++] = cmd;"
 "	} else {",
 "		varg[j++] = scrpt;		/* The script itself */",
 "	}",
 "	if (*lsto)",
 "		varg[j++] = lsto;	/* Option meaning last option */",
-"	i = (ret > 1) ? ret : 0;	/* Args numbering correction */",
+"xec:",
+"	i = (ret > 1) ? ret : i0;	/* Args numbering correction */",
 "	while (i < argc)",
 "		varg[j++] = argv[i++];	/* Main run-time arguments */",
 "	varg[j] = 0;			/* NULL terminated array */",
@@ -808,7 +818,7 @@ static const char * RTC[] = {
 static int parse_an_arg(int argc, char * argv[])
 {
 	extern char * optarg;
-	const char * opts = "e:m:f:i:x:l:o:rvDSUHPCAB2h";
+	const char * opts = "e:m:f:i:x:l:o:rvDSUHPCAB2h0";
 	struct tm tmp[1];
 	time_t expdate;
 	int cnt, l;
@@ -874,6 +884,9 @@ static int parse_an_arg(int argc, char * argv[])
 		break;
 	case 'P':
 		PIPESCRIPT_flag = 1;
+		break;
+	case '0':
+		FIXARGV0_flag = 1;
 		break;
 	case 'H':
 		HARDENING_flag = 1;
@@ -947,7 +960,7 @@ static void parse_args(int argc, char * argv[])
 		if (ret == -1)
 			err++;
 	} while (ret);
-    
+
 	if (err) {
 		fprintf(stderr, "\n%s %s\n\n", my_name, usage);
 		exit(1);
@@ -959,7 +972,7 @@ static void parse_args(int argc, char * argv[])
 static unsigned char stte[256], indx, jndx, kndx;
 
 /*
- * Reset arc4 stte. 
+ * Reset arc4 stte.
  */
 void stte_0(void)
 {
@@ -970,7 +983,7 @@ void stte_0(void)
 }
 
 /*
- * Set key. Can be used more than once. 
+ * Set key. Can be used more than once.
  */
 void key(void * str, int len)
 {
@@ -989,7 +1002,7 @@ void key(void * str, int len)
 }
 
 /*
- * Crypt data. 
+ * Crypt data.
  */
 void arc4(void * str, int len)
 {
@@ -1047,20 +1060,20 @@ struct {
 } shellsDB[] = {
 	{ "perl", "-e", "--", "exec('%s',@ARGV);", "" },
 	{ "rc",   "-c", "",   "builtin exec %s $*", "" },
-	{ "sh",   "-c", "",   "exec '%s' \"$@\"", ". '%s'" }, /* IRIX_nvi */
-	{ "dash", "-c", "",   "exec '%s' \"$@\"", ". '%s'" },
-	{ "bash", "-c", "",   "exec '%s' \"$@\"", ". '%s'" },
-	{ "zsh",  "-c", "",   "exec '%s' \"$@\"", ". '%s'" },
-	{ "bsh",  "-c", "",   "exec '%s' \"$@\"", ". '%s'" }, /* AIX_nvi */
-	{ "Rsh",  "-c", "",   "exec '%s' \"$@\"", ". '%s'" }, /* AIX_nvi */
-	{ "ksh",  "-c", "",   "exec '%s' \"$@\"", ". '%s'" }, /* OK on Solaris, AIX and Linux (THX <bryan.hogan@dstintl.com>) */
-	{ "tsh",  "-c", "--", "exec '%s' \"$@\"", ". '%s'" }, /* AIX */
-	{ "ash",  "-c", "--", "exec '%s' \"$@\"", ". '%s'" }, /* Linux */
+	{ "sh",   "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" }, /* IRIX_nvi */
+	{ "dash", "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" },
+	{ "bash", "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" },
+	{ "zsh",  "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" },
+	{ "bsh",  "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" }, /* AIX_nvi */
+	{ "Rsh",  "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" }, /* AIX_nvi */
+	{ "ksh",  "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" }, /* OK on Solaris, AIX and Linux (THX <bryan.hogan@dstintl.com>) */
+	{ "tsh",  "-c", "--", "exec '%s' \"$@\"", ". %.0s'%s'" }, /* AIX */
+	{ "ash",  "-c", "--", "exec '%s' \"$@\"", ". %.0s'%s'" }, /* Linux */
 	{ "csh",  "-c", "-b", "exec '%s' $argv", "source '%s'" }, /* AIX: No file for $0 */
 	{ "tcsh", "-c", "-b", "exec '%s' $argv", "source '%s'" },
-	{ "python", "-c", "", "import os,sys;os.execv('%s',sys.argv)", "" },
-	{ "python2", "-c", "", "import os,sys;os.execv('%s',sys.argv)", "" },
-	{ "python3", "-c", "", "import os,sys;os.execv('%s',sys.argv)", "" },
+	{ "python", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];%.0s exec(open('%s').read())" },
+	{ "python2", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read())" },
+	{ "python3", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read()" },
 	{ NULL,   NULL, NULL, NULL },
 };
 
@@ -1348,6 +1361,7 @@ int write_C(char * file, char * argv[])
 	fprintf(o, DEBUGEXEC_line, DEBUGEXEC_flag);
 	fprintf(o, TRACEABLE_line, TRACEABLE_flag);
 	fprintf(o, PIPESCRIPT_line, PIPESCRIPT_flag);
+	fprintf(o, FIXARGV0_line, FIXARGV0_flag);
 	fprintf(o, HARDENING_line, HARDENING_flag);
 	fprintf(o, BUSYBOXON_line, BUSYBOXON_flag);
 	fprintf(o, MMAP2_line, MMAP2_flag);
@@ -1407,6 +1421,9 @@ void do_all(int argc, char * argv[])
 		return;
 	if (eval_shell(text))
 		return;
+	if(strstr(shll, "python")) {
+		PIPESCRIPT_flag=1;
+	}
 	if (write_C(file, argv))
 		return;
 	if (make())
