@@ -3,9 +3,9 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  # Normally runs in less than 50 seconds, but could stall because of test
-  timeout-minutes: 3
-  build:
+  build-and-test:
+    # Normally runs in less than 50 seconds, but could stall because of test
+    timeout-minutes: 3
     runs-on: ubuntu-24.04
 
     steps:
