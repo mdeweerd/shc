@@ -855,13 +855,13 @@ static int parse_an_arg(int argc, char *argv[])
 		file = optarg;
 		break;
 	case 'i':
-		inlo = optarg;
+		inlo = strdup(optarg);  // Gets encrypted
 		break;
 	case 'x':
-		xecc = optarg;
+		xecc = strdup(optarg);  // Gets encrypted
 		break;
 	case 'l':
-		lsto = optarg;
+		lsto = strdup(optarg);  // Gets encrypted
 		break;
 	case 'o':
 		file2 = optarg;
@@ -1304,7 +1304,7 @@ void cleanup_write_c(char *msg1, char *msg2, char *chk1, char *chk2, char *tst1,
 	if (name) { free(name); }
 }
 
-int write_C(char *file, char *argv[])
+int write_C(char *file, int argc, char *argv[])
 {
 	char pswd[256];
 	int pswd_z = sizeof(pswd);
@@ -1379,7 +1379,7 @@ int write_C(char *file, char *argv[])
 	fprintf(o, "#if 0\n");
 	fprintf(o, "\t%s %s, %s\n", my_name, version, subject);
 	fprintf(o, "\t%s %s %s %s\n\n\t", cpright, provider.f, provider.s, provider.e);
-	for (l_idx = 0; argv[l_idx]; l_idx++) {
+	for (l_idx = 0; l_idx < argc; l_idx++) {
 		fprintf(o, "%s ", argv[l_idx]);
 	}
 	fprintf(o, "\n#endif\n\n");
@@ -1489,7 +1489,7 @@ void do_all(int argc, char *argv[])
 	if (eval_shell(text)) {
 		return;
 	}
-	if (write_C(file, argv)) {
+	if (write_C(file, argc, argv)) {
 		return;
 	}
 	if (make()) {
