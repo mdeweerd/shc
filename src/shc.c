@@ -1058,7 +1058,7 @@ struct {
 	char * xecc;
 	char * pfmt;
 } shellsDB[] = {
-	{ "perl", "-e", "--", "exec('%s',@ARGV);", "" },
+	{ "perl", "-e", "--", "exec('%s',@ARGV);", "$0='%s';open(F,'%s');@SHCS=<F>;close(F);eval(join('',@SHCS));" },
 	{ "rc",   "-c", "",   "builtin exec %s $*", "" },
 	{ "sh",   "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" }, /* IRIX_nvi */
 	{ "dash", "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" },
@@ -1421,7 +1421,8 @@ void do_all(int argc, char * argv[])
 		return;
 	if (eval_shell(text))
 		return;
-	if(strstr(shll, "python")) {
+	if(strstr(shll, "python")
+	   ||strstr(shll, "perl")) {
 		PIPESCRIPT_flag=1;
 	}
 	if (write_C(file, argv))
