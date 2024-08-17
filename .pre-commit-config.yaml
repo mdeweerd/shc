@@ -91,7 +91,7 @@ repos:
     rev: v0.10.0.1
     hooks:
       - id: shellcheck
-        exclude: (?x)^(test/.*)$
+        exclude: (?x)^(test/test.*)$
         # args: [-x,-e1007,-e1009,-e1072,-e1073]
   - repo: https://github.com/pocc/pre-commit-hooks
     rev: v1.3.5

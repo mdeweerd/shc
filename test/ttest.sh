@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# shellcheck disable=2016,2028
 shells=('/bin/sh' '/bin/dash' '/bin/bash' '/bin/ksh' '/bin/zsh' '/usr/bin/tcsh' '/bin/csh' '/usr/bin/rc' '/usr/bin/python' '/usr/bin/python2' '/usr/bin/python3' '/usr/bin/perl')
 ## Install: sudo apt install dash bash ksh zsh tcsh csh rc
 
@@ -19,7 +19,7 @@ SKIP=",${SKIP},ash,"
 echo
 echo "== Running tests ... (Skip expression: $SKIP)"
 for shell in "${shells[@]}"; do
-    if [ "${SKIP#*,${shell##*/},}" != "$SKIP" ] ; then
+    if [ "${SKIP#*,"${shell##*/}",}" != "$SKIP" ] ; then
         echo    "===================================================="
         echo -e "=== $shell                :SKIPPED"
         echo    "===================================================="
@@ -44,19 +44,19 @@ for shell in "${shells[@]}"; do
             echo '#!'"$shell"
             if [ "${shell#*/pyth}" != "$shell" ] ; then
                 # Python
-                echo 'import sys; sys.stdout.write(("'${shell}': Hello World sn:%s fp:%s sp:%s" % (sys.argv[0],sys.argv[1],sys.argv[2]))+"\n")'
+                echo 'import sys; sys.stdout.write(("'"${shell}"': Hello World sn:%s fp:%s sp:%s" % (sys.argv[0],sys.argv[1],sys.argv[2]))+"\n")'
             elif [ "${shell#*/rc}" != "$shell" ] ; then
                 # rc
-                echo 'echo '${shell}': Hello World sn:$0 fp:$1 sp:$2'
+                echo 'echo '"${shell}"': Hello World sn:$0 fp:$1 sp:$2'
             elif [ "${shell#*/perl}" != "$shell" ] ; then
                 # perl
-                echo 'print "'${shell}': Hello World sn:$0 fp:$ARGV[0] sp:$ARGV[1]";'
+                echo 'print "'"${shell}"': Hello World sn:$0 fp:$ARGV[0] sp:$ARGV[1]";'
             elif [ "${shell#*/csh}" != "$shell" ] ; then
                 # csh - can not forge $0
-                echo 'echo "'${shell}:' Hello World fp:$1 sp:$2"'
+                echo 'echo "'"${shell}":' Hello World fp:$1 sp:$2"'
                 expected=${shell}': Hello World fp:first sp:second'
             else
-                echo 'echo "'${shell}:' Hello World sn:$0 fp:$1 sp:$2"'
+                echo 'echo "'"${shell}":' Hello World sn:$0 fp:$1 sp:$2"'
             fi
         } > "$tmpf"
         # shellcheck disable=SC2086
