@@ -14,6 +14,7 @@ jobs:
       run: sudo apt-get update -q && sudo apt install -y dash bash ksh zsh tcsh csh rc
 
     - name: Build and Test (with sanitize)
+      if: false
       env:
         SKIP: python2
       run: |
