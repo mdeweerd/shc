@@ -1073,7 +1073,7 @@ struct {
 	{ "tcsh", "-c", "-b", "exec '%s' $argv", "source '%s'" },
 	{ "python", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];%.0s exec(open('%s').read())" },
 	{ "python2", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read())" },
-	{ "python3", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read()" },
+	{ "python3", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read())" },
 	{ NULL,   NULL, NULL, NULL },
 };
 
