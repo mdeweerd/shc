@@ -87,7 +87,7 @@ static const char * help[] = {
 "    -H     Hardening : extra security protection [no]",
 "           Require bourne shell (sh) and parameters are not supported",
 "    -P     Submit script as a pipe [no]",
-"    -0     Fix handling of argv0 [no]",
+"    -p     Don't forge argv0 with -P [no]",
 "    -C     Display license and exit",
 "    -A     Display abstract and exit",
 "    -B     Compile for busybox",
@@ -157,7 +157,7 @@ static const char PIPESCRIPT_line[] =
 static int PIPESCRIPT_flag = 0;
 static const char FIXARGV0_line[] =
 "#define FIXARGV0	%d	/* Define as 1 fix handling of ARGV0 */\n";
-static int FIXARGV0_flag = 0;
+static int FIXARGV0_flag = 1;
 
 static const char * RTC[] = {
 "",
@@ -885,8 +885,8 @@ static int parse_an_arg(int argc, char * argv[])
 	case 'P':
 		PIPESCRIPT_flag = 1;
 		break;
-	case '0':
-		FIXARGV0_flag = 1;
+	case 'p':
+		FIXARGV0_flag = 0;
 		break;
 	case 'H':
 		HARDENING_flag = 1;
@@ -1422,7 +1422,8 @@ void do_all(int argc, char * argv[])
 	if (eval_shell(text))
 		return;
 	if(strstr(shll, "python")
-	   ||strstr(shll, "perl")) {
+	   ||strstr(shll, "perl")
+	   ||strstr(shll, "csh")) {
 		PIPESCRIPT_flag=1;
 	}
 	if (write_C(file, argv))
