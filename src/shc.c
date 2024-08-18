@@ -1069,8 +1069,8 @@ struct {
 	{ "ksh",  "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" }, /* OK on Solaris, AIX and Linux (THX <bryan.hogan@dstintl.com>) */
 	{ "tsh",  "-c", "--", "exec '%s' \"$@\"", ". %.0s'%s'" }, /* AIX */
 	{ "ash",  "-c", "--", "exec '%s' \"$@\"", ". %.0s'%s'" }, /* Linux */
-	{ "csh",  "-c", "-b", "exec '%s' $argv:q", "source '%s'" }, /* AIX: No file for $0 */
-	{ "tcsh", "-c", "-b", "exec '%s' $argv:q", "source '%s'" },
+	{ "csh",  "-c", "-b", "exec '%s' $argv:q", "source %.0s'%s'" }, /* AIX: No file for $0 */
+	{ "tcsh", "-c", "-b", "exec '%s' $argv:q", "source %.0s'%s'" },
 	{ "python", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];%.0s exec(open('%s').read())" },
 	{ "python2", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read())" },
 	{ "python3", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read())" },
