@@ -40,22 +40,29 @@ for shell in "${shells[@]}"; do
         tmpa="$tmpd/a.out.${BASESHELL}$opt"
         tmpl="$tmpd/a.log"
         out=""
-        expected=${shell}': Hello World sn:'${tmpa}' fp:first sp:second'
+        firstarg='first quote" and space'
+        secondarg="secondWithSingleQuote'"
+        expected=${shell}': Hello World sn:'"${tmpa}"' fp:'"${firstarg}"' sp:'"${secondarg}"
         {
             echo '#!'"$shell"
             if [ "${shell#*/pyth}" != "$shell" ] ; then
                 # Python
                 echo 'import sys; sys.stdout.write(("'"${shell}"': Hello World sn:%s fp:%s sp:%s" % (sys.argv[0],sys.argv[1],sys.argv[2]))+"\n")'
-            elif [ "${shell#*/rc}" != "$shell" ] ; then
+            elif [ "$BASESHELL" = "rc" ] ; then
                 # rc
-                echo 'echo '"${shell}"': Hello World sn:$0 fp:$1 sp:$2'
+                if [ "$opt" != "-P" ] ; then
+                    echo 'echo '"${shell}"': Hello World sn:$0 fp:$1 sp:$2'
+                else
+                    echo 'echo '"${shell}"': Hello World fp:$1 sp:$2'
+                    expected=${shell}': Hello World fp:'"${firstarg}"' sp:'"${secondarg}"
+                fi
             elif [ "${shell#*/perl}" != "$shell" ] ; then
                 # perl
                 echo 'print "'"${shell}"': Hello World sn:$0 fp:$ARGV[0] sp:$ARGV[1]";'
             elif [ "${shell#*/csh}" != "$shell" ] ; then
                 # csh - can not forge $0
                 echo 'echo "'"${shell}":' Hello World fp:$1 sp:$2"'
-                expected=${shell}': Hello World fp:first sp:second'
+                expected=${shell}': Hello World fp:'"${firstarg}"' sp:'"${secondarg}"
             else
                 echo 'echo "'"${shell}":' Hello World sn:$0 fp:$1 sp:$2"'
             fi
@@ -66,11 +73,11 @@ for shell in "${shells[@]}"; do
 
         if [ "$opt" = "-D" ] ; then
             # Hide debug output
-            out=$("$tmpa" first second 2>/dev/null)
+            out=$("$tmpa" "$firstarg" "$secondarg" 2>/dev/null)
             # TODO: compare dbg output
             # outdbg=$("$tmpa" first second 2>1)
         else
-            out=$("$tmpa" first second 2>&1)
+            out=$("$tmpa" "$firstarg" "$secondarg" 2>&1)
         fi
         if [[ "$out" = "$expected" ]]; then
             echo    "===================================================="
