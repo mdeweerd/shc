@@ -20,8 +20,6 @@ echo
 echo "== Running tests ... (Skip expression: $SKIP)"
 for shell in "${shells[@]}"; do
     BASESHELL=${shell##*/}
-    echo "'$BASESHELL'"
-    [ "$BASESHELL" = "rc" ] && echo "*******************************************"
     if [ "${SKIP#*,"${BASESHELL}",}" != "$SKIP" ] ; then
         echo    "===================================================="
         echo -e "=== $shell                :SKIPPED"
