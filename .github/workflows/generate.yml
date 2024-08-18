@@ -28,6 +28,8 @@ jobs:
           args: -s man.md -t html -o man.html
       - run: |-
           ./autogen.sh
+          # Correct executable flag on generated files
+          chmod -x INSTALL
         if: ${{ github.event_name == 'workflow_dispath' || steps.changes.outputs.autotools == 'true' }}
       - name: Commit changes
         if: ${{ github.event_name == 'workflow_dispath' || steps.changes.outputs.man == 'true' || steps.changes.outputs.autotools }}
