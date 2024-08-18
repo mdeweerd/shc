@@ -1059,11 +1059,11 @@ struct {
 	char * pfmt;
 } shellsDB[] = {
 	{ "perl", "-e", "--", "exec('%s',@ARGV);", "$0='%s';open(F,'%s');@SHCS=<F>;close(F);eval(join('',@SHCS));" },
-	{ "rc",   "-c", "",   "builtin exec %s $*", "" },
+	{ "rc",   "-c", "",   "builtin exec %s $*", ". %.0s'%s' $*" },
 	{ "sh",   "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" }, /* IRIX_nvi */
 	{ "dash", "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" },
 	{ "bash", "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" },
-	{ "zsh",  "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" },
+	{ "zsh",  "-c", "",   "exec '%s' \"$@\"", "setopt posix_argzero ; . %.0s'%s'" },
 	{ "bsh",  "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" }, /* AIX_nvi */
 	{ "Rsh",  "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" }, /* AIX_nvi */
 	{ "ksh",  "-c", "",   "exec '%s' \"$@\"", ". %.0s'%s'" }, /* OK on Solaris, AIX and Linux (THX <bryan.hogan@dstintl.com>) */
