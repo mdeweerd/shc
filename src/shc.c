@@ -1068,25 +1068,25 @@ struct {
 	char *	xecc;
 	char *	pfmt;
 } shellsDB[] = {
-	{ "perl", "-e", "--", "exec('%s',@ARGV);", "" },
-	{ "rc", "-c", "", "builtin exec %s $*", "" },
+	{ "perl", "-e", "--", "exec('%s',@ARGV);", "$0='%s';open(F,'%s');@SHCS=<F>;close(F);eval(join('',@SHCS));" },
+	{ "rc", "-c", "", "builtin exec %s $*", ". %.0s'%s' $*" },
 	{ "sh", "-c", "", "exec '%s' \"$@\"", ". %.0s'%s'" },  /* IRIX_nvi */
 	{ "dash", "-c", "", "exec '%s' \"$@\"", ". %.0s'%s'" },
 	{ "bash", "-c", "", "exec '%s' \"$@\"", ". %.0s'%s'" },
-	{ "zsh", "-c", "", "exec '%s' \"$@\"", ". %.0s'%s'" },
-	{ "bsh", "-c", "", "exec '%s' \"$@\"", ". %.0s'%s'" },      /* AIX_nvi */
-	{ "Rsh", "-c", "", "exec '%s' \"$@\"", ". %.0s'%s'" },      /* AIX_nvi */
-	{ "ksh", "-c", "", "exec '%s' \"$@\"", ". %.0s'%s'" },      /* OK on Solaris, AIX and Linux (THX <bryan.hogan@dstintl.com>) */
-	{ "tsh", "-c", "--", "exec '%s' \"$@\"", ". %.0s'%s'" },    /* AIX */
-	{ "ash", "-c", "--", "exec '%s' \"$@\"", ". %.0s'%s'" },    /* Linux */
-	{ "csh", "-c", "-b", "exec '%s' $argv", "source '%s'" },    /* AIX: No file for $0 */
-	{ "tcsh", "-c", "-b", "exec '%s' $argv", "source '%s'" },
+	{ "zsh", "-c", "", "exec '%s' \"$@\"", "setopt posix_argzero ; . %.0s'%s'" },
+	{ "bsh", "-c", "", "exec '%s' \"$@\"", ". %.0s'%s'" },          /* AIX_nvi */
+	{ "Rsh", "-c", "", "exec '%s' \"$@\"", ". %.0s'%s'" },          /* AIX_nvi */
+	{ "ksh", "-c", "", "exec '%s' \"$@\"", ". %.0s'%s'" },          /* OK on Solaris, AIX and Linux (THX <bryan.hogan@dstintl.com>) */
+	{ "tsh", "-c", "--", "exec '%s' \"$@\"", ". %.0s'%s'" },        /* AIX */
+	{ "ash", "-c", "--", "exec '%s' \"$@\"", ". %.0s'%s'" },        /* Linux */
+	{ "csh", "-c", "-b", "exec '%s' $argv:q", "source %.0s'%s'" },  /* AIX: No file for $0 */
+	{ "tcsh", "-c", "-b", "exec '%s' $argv:q", "source %.0s'%s'" },
 	{ "python", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])",
 	  "import sys;sys.argv[0:1]=[];%.0s exec(open('%s').read())" },
 	{ "python2", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])",
 	  "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read())" },
 	{ "python3", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])",
-	  "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read()" },
+	  "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read())" },
 	{ NULL, NULL, NULL, NULL },
 };
 
@@ -1461,7 +1461,8 @@ void do_all(int argc, char *argv[])
 	if (eval_shell(text)) {
 		return;
 	}
-	if (strstr(shll, "python")) {
+	if (strstr(shll, "python")
+		|| strstr(shll, "perl")) {
 		PIPESCRIPT_flag = 1;
 	}
 	if (write_C(file, argv)) {
