@@ -1,7 +1,6 @@
 #!/bin/bash
 # shellcheck disable=2016,2028
 shells=('/bin/sh' '/bin/dash' '/bin/bash' '/bin/ksh' '/bin/zsh' '/usr/bin/tcsh' '/bin/csh' '/usr/bin/rc' '/usr/bin/python' '/usr/bin/python2' '/usr/bin/python3' '/usr/bin/perl')
-shells=('/bin/zsh')
 ## Install: sudo apt install dash bash ksh zsh tcsh csh rc
 
 check_opts=('' '-r' '-v' '-D' '-S' '-P')
