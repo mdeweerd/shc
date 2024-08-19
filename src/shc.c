@@ -69,7 +69,7 @@ static const char *abstract[] = {
 };
 
 static const char usage[] =
-	"Usage: shc [-e DATE] [-m MESSAGE] [-i IOPT] [-x CMD] [-l LOPT] [-o OUTFILE] [-rvDSUHPCAB2h] -f SCRIPT";
+	"Usage: shc [-e DATE] [-m MESSAGE] [-i IOPT] [-x CMD] [-l LOPT] [-o OUTFILE] [-2ABCDhHpPrSUv] -f SCRIPT";
 
 static const char *help[] = {
 	"",
@@ -162,8 +162,13 @@ static const char FIXARGV0_line[] =
 static int FIXARGV0_flag = 1;
 
 static const char *RTC[] = {
-	"",
+	"#if defined(__GNUC__)",
+	"#define _UNUSED_R(x) { int __attribute__((unused)) _tmp = (int) (x); }",
+	"#else",
+	"#define _UNUSED_R(x) (void) (x)",
+	"#endif",
 	"#if HARDENING",
+	"",
 	"static const char * shc_x[] = {",
 	"\"/*\",",
 	"\" * Copyright 2019 - Intika <intika@librefox.org>\",",
@@ -445,7 +450,7 @@ static const char *RTC[] = {
 	"		snprintf(tmp3, sizeof(tmp3), \"%s %s\", \"'********' 21<<<\", tmp2);",
 	"",
 	"		/* Exec bash script - fork execl with 'sh -c' */",
-	"		system(tmp2);",
+	"		_UNUSED_R(system(tmp2));",
 	"",
 	"		/* Empty script variable */",
 	"		memcpy(tmp2, str, lentmp);",
@@ -804,11 +809,6 @@ static const char *RTC[] = {
 	"}",
 	"",
 	"int main(int argc, char ** argv) {",
-	"#if defined(__GNUC__)",
-	"#define _UNUSED_R(x) { int __attribute__((unused)) _tmp = (int) (x); }",
-	"#else",
-	"#define _UNUSED_R(x) (void) (x)",
-	"#endif",
 	"#if SETUID",
 	"	_UNUSED_R(setuid(0));",
 	"#endif",
@@ -835,7 +835,7 @@ static const char *RTC[] = {
 static int parse_an_arg(int argc, char *argv[])
 {
 	extern char *optarg;
-	const char *opts = "e:m:f:i:x:l:o:rvDSUHPCAB2hp";
+	const char *opts = "e:m:i:x:l:o:f:2ABCDhHpPrSUv";
 	struct tm tmp[1];
 	time_t expdate;
 	int cnt, l;
@@ -852,7 +852,7 @@ static int parse_an_arg(int argc, char *argv[])
 			expdate = mktime(tmp);
 		}
 		if ((cnt != 3) || (expdate <= 0)) {
-			fprintf(stderr, "%s parse(-e %s): Not a valid value\n",
+			fprintf(stderr, "%s parse(-e %s): Not a valid date\n",
 				my_name, optarg);
 			return -1;
 		}
@@ -866,8 +866,8 @@ static int parse_an_arg(int argc, char *argv[])
 		break;
 	case 'f':
 		if (file) {
-			fprintf(stderr, "%s parse(-f): Specified more than once\n",
-				my_name);
+			fprintf(stderr, "%s parse(-f '%s'): Can convert exactly one SCRIPT, but -f specified more than once\n",
+				my_name, optarg);
 			return -1;
 		}
 		file = optarg;
@@ -940,7 +940,7 @@ static int parse_an_arg(int argc, char *argv[])
 		break;
 	case -1:
 		if (!file) {
-			fprintf(stderr, "%s parse(-f): No source file specified\n", my_name);
+			fprintf(stderr, "%s parse: Must specify SCRIPT name argument -f\n", my_name);
 			file = "";
 			return -1;
 		}
