@@ -1,5 +1,26 @@
 CHANGES
 
+LATEST Aug 19 2024
+
+    * Feat: Piping (`-P`, `-p`), with `$0` forging (big scripts, perl. python) @fabio-brugnara.
+    * Qual: Enhance tests (Check stderr, forging, tempdir, complex arguments), option SKIP (tests) @mdeweerd.
+    * Qual: Add Github CI flox (build, run tests with(out) sanitizer, generate files) @mdeweerd.
+    * Fix:  Fix memory leaks in generated c-code @mdeweerd.
+    * Fix:  Fix memory leaks in generation c-code @ashamedbit #165
+    * Fix:  Fix static code checks/implement recommendations (prevent leaks, overflows) @mdeweerd.
+    * Qual: Add static code checks, linting, code formatting @mdeweerd #162 #161
+    * Doc:  Improvements to the documentation @mdeweerd #163 #160
+    * Doc:  Add code block hinting for Ubuntu PPA install procedure lb803 #164
+    * Feat: Remove `ash` dependency @dviererbe #167
+    * Fix:  Fix for script filenames with spaces/special characters @ergoucao #157.
+    * Feat: Option `-2` to use mmap2 @csersoft #132
+    * Doc:  Fix automatic hyperlinks by removing `<>` @learnpassword #148
+    * Doc:  Fix typo in usage @ghost #129
+    * Fix:  Fix strip in case of cross-compilation @embexus #125
+    * Fix:  Fix NULL-ptr dereference in shhl string @RKX1209 #83
+
+    Note: @GITHUB_USERNAME #neurobin/Github Pull Request
+
 4.0.3 Tue Nov 20 08:22:20 UTC 2018
 
     * Enhance -H flag by intika <https://github.com/intika> (Hide commands arguments from ps and cmdline)
