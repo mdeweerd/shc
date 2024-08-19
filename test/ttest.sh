@@ -20,8 +20,6 @@ echo
 echo "== Running tests ... (Skip expression: $SKIP)"
 for shell in "${shells[@]}"; do
     BASESHELL=${shell##*/}
-    echo "'$BASESHELL'"
-    [ "$BASESHELL" = "rc" ] && echo "*******************************************"
     if [ "${SKIP#*,"${BASESHELL}",}" != "$SKIP" ] ; then
         echo    "===================================================="
         echo -e "=== $shell                :SKIPPED"
@@ -70,7 +68,7 @@ for shell in "${shells[@]}"; do
             fi
         } > "$tmpf"
         # shellcheck disable=SC2086
-        "$shc" -0 $opt -f "$tmpf" -o "$tmpa"
+        "$shc" $opt -f "$tmpf" -o "$tmpa"
         # ls -la "$tmpa"
 
         if [ "$opt" = "-D" ] ; then
