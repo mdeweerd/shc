@@ -3,7 +3,7 @@
 shells=('/bin/sh' '/bin/dash' '/bin/bash' '/bin/ksh' '/bin/zsh' '/usr/bin/tcsh' '/bin/csh' '/usr/bin/rc' '/usr/bin/python' '/usr/bin/python2' '/usr/bin/python3' '/usr/bin/perl')
 ## Install: sudo apt install dash bash ksh zsh tcsh csh rc
 
-check_opts=('' '-r' '-v' '-D' '-S' '-P')
+check_opts=('' '-r' '-v' '-D' '-S' '-P' '-p' '-H' '-2')
 
 shc=${1-shc}
 
@@ -35,6 +35,12 @@ for shell in "${shells[@]}"; do
         continue
     fi
     for opt in "${check_opts[@]}"; do
+        if [ "${opt}" = "-H" ] ; then
+            if [ "${shell#*sh}" = "$shell" ] ; then
+                # Only supported for "bourne shell"
+                continue
+            fi
+        fi
         tmpd=$(mktemp -d "/tmp/shc.${BASESHELL}${opt}.XXX.tst")
         tmpf="$tmpd/test.$(basename "$shell")"
         tmpa="$tmpd/a.out.${BASESHELL}$opt"
@@ -42,29 +48,69 @@ for shell in "${shells[@]}"; do
         out=""
         firstarg='first quote" and space'
         secondarg="secondWithSingleQuote'"
-        expected=${shell}': Hello World sn:'"${tmpa}"' fp:'"${firstarg}"' sp:'"${secondarg}"
+
+        # Default values for echo/print and expectations
+        args_echo=' fp:(1) sp:(2)'
+        args_expected=" fp:${firstarg} sp:${secondarg}"
+        sn_echo=' sn:(0)'
+        sn_expected=" sn:${tmpa}"
+
+        # Modify defaults according to test/skip test
+        if [ "${opt}" = "-H" ] ; then
+            # -H does not support arguments
+            args_echo=
+            args_expected=
+            sn_echo=
+            sn_expected=
+        elif [ "${opt}" = "-p" ] ; then
+            # -p does not suppose $0 support
+            sn_echo=
+            sn_expected=
+        fi
+
+        default_echo="${shell}: Hello World${sn_echo}${args_echo}"
+        expected="${shell}: Hello World${sn_expected}${args_expected}"
+
+        arg_only_echo="${shell}: Hello World${args_echo}"
+        arg_only_expected="${shell}: Hello World${args_expected}"
+
         {
             echo '#!'"$shell"
             if [ "${shell#*/pyth}" != "$shell" ] ; then
                 # Python
-                echo 'import sys; sys.stdout.write(("'"${shell}"': Hello World sn:%s fp:%s sp:%s" % (sys.argv[0],sys.argv[1],sys.argv[2]))+"\n")'
+                default_echo="${default_echo//\(/\{}"  # Use % to indicate arg
+                default_echo="${default_echo//)/\}}"    # No end parentheses
+                echo 'import sys; sys.stdout.write("'"${default_echo}"'".format(*sys.argv)+"\n")'
             elif [ "$BASESHELL" = "rc" ] ; then
+                default_echo="${default_echo//\(/\$}"  # Use $ to indicate arg
+                default_echo="${default_echo//)/}"    # No end parentheses
+                arg_only_echo="${arg_only_echo//\(/\$}"  # Use $ to indicate arg
+                arg_only_echo="${arg_only_echo//)/}"    # No end parentheses
                 # rc
                 if [ "$opt" != "-P" ] ; then
-                    echo 'echo '"${shell}"': Hello World sn:$0 fp:$1 sp:$2'
+                    echo "echo ${default_echo}"
                 else
-                    echo 'echo '"${shell}"': Hello World fp:$1 sp:$2'
-                    expected=${shell}': Hello World fp:'"${firstarg}"' sp:'"${secondarg}"
+                    echo "echo ${arg_only_echo}"
+                    expected="${arg_only_expected}"
                 fi
             elif [ "${shell#*/perl}" != "$shell" ] ; then
                 # perl
-                echo 'print "'"${shell}"': Hello World sn:$0 fp:$ARGV[0] sp:$ARGV[1]";'
+                default_echo="${default_echo//\(/\$ARGV\[}"  # Use $ARGV[ to indicate arg
+                default_echo="${default_echo//)/\]}"         # Place ] after arg index
+                default_echo="${default_echo//\$ARGV\[0\]/\$0}"  # $0 for first argument
+                default_echo="${default_echo//1/0}"  # Argument shift
+                default_echo="${default_echo//2/1}"  # Argument shift
+                echo 'print "'"${default_echo}"'";'
             elif [ "${shell#*/csh}" != "$shell" ] ; then
                 # csh - can not forge $0
-                echo 'echo "'"${shell}":' Hello World fp:$1 sp:$2"'
-                expected=${shell}': Hello World fp:'"${firstarg}"' sp:'"${secondarg}"
+                arg_only_echo="${arg_only_echo//\(/\$}"  # Use $ to indicate arg
+                arg_only_echo="${arg_only_echo//)/}"    # No end parentheses
+                echo 'echo "'"${arg_only_echo}"'"'
+                expected="${arg_only_expected}"
             else
-                echo 'echo "'"${shell}":' Hello World sn:$0 fp:$1 sp:$2"'
+                default_echo=${default_echo//\(/\$}  # Use $ to indicate arg
+                default_echo="${default_echo//)/}"    # No end parentheses
+                echo 'echo "'"${default_echo}"'"'
             fi
         } > "$tmpf"
         # shellcheck disable=SC2086
