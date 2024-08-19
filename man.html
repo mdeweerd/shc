@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="" />
-  <meta name="dcterms.date" content="2019-01-14" />
+  <meta name="dcterms.date" content="2024-08-19" />
   <title>shc(1) shc user manual</title>
   <style>
     html {
@@ -238,74 +238,85 @@
 <header id="title-block-header">
 <h1 class="title">shc(1) shc user manual</h1>
 <p class="author"></p>
-<p class="date">January 14, 2019</p>
+<p class="date">August 19, 2024</p>
 </header>
 <hr>
 <h1 id="name">NAME</h1>
 <p>shc - Generic shell script compiler</p>
 <h1 id="synopsis">SYNOPSIS</h1>
-<p><strong>shc</strong> [ -e <em>date</em> ] [ -m <em>addr</em> ] [ -i
-<em>iopt</em> ] [ -x <em>cmnd</em> ] [ -l <em>lopt</em> ] [ -o
-<em>outfile</em> ] [ -ABCDhUHvSr ] -f <em>script</em></p>
+<p><strong>shc</strong> [ -e <em>DATE</em> ] [ -m <em>MESSAGE</em> ] [
+-i <em>IOPT</em> ] [ -x <em>CMD</em> ] [ -l <em>LOPT</em> ] [ -o
+<em>OUTFILE</em> ] [ -2ABCDHpPSUhrv ] -f <em>SCRIPT</em></p>
 <h1 id="description">DESCRIPTION</h1>
 <p><strong>shc</strong> creates a stripped binary executable version of
 the script specified with <code>-f</code> on the command line.</p>
 <p>The binary version will get a <code>.x</code> extension appended by
-default if <em>outfile</em> is not defined with [-o <em>outfile</em>]
+default if <em>OUTFILE</em> is not defined with [-o <em>OUTFILE</em>]
 option and will usually be a bit larger in size than the original ascii
 code. Generated C source code is saved in a file with the extension
 <code>.x.c</code> or in a file specified with appropriate option.</p>
-<p>If you supply an expiration date with the <code>-e</code> option, the
-compiled binary will refuse to run after the date specified. The message
-<strong>Please contact your provider</strong> will be displayed instead.
-This message can be changed with the <code>-m</code> option.</p>
+<p>If you provide an expiration DATE with the <code>-e</code> option,
+the compiled binary will refuse to run after the date specified. The
+message <strong>Please contact your provider</strong> will be displayed
+instead. This message can be changed with the <code>-m</code>
+option.</p>
 <p>You can compile any kind of shell script, but you need to supply
 valid <code>-i</code>, <code>-x</code> and <code>-l</code> options.</p>
-<p>The compiled binary will still be dependent on the shell specified in
-the first line of the shell code (i.e. <code>#!/bin/sh</code>), thus
-<strong>shc</strong> does not create completely independent
-binaries.</p>
+<p>The compiled binary will still require the shell specified in the
+first line of the shell code (i.e. <code>#!/bin/sh</code>) to be
+available on the system, therefore <strong>shc</strong> does not create
+completely independent binaries, it mainly obfuscates the source
+script.</p>
 <p><strong>shc</strong> itself is not a compiler such as cc, it rather
 encodes and encrypts a shell script and generates C source code with the
 added expiration capability. It then uses the system compiler to compile
 a stripped binary which behaves exactly like the original script. Upon
 execution, the compiled binary will decrypt and execute the code with
-the shell <code>-c</code> option. Unfortunately, it will not give you
-any speed improvement as a real C program would.</p>
+the shell <code>-c</code> option. It will not give you any speed
+improvement as a real C program would.</p>
 <p><strong>shc</strong>’s main purpose is to protect your shell scripts
 from modification or inspection. You can use it if you wish to
 distribute your scripts but don’t want them to be easily readable by
 other people.</p>
 <h1 id="options">OPTIONS</h1>
 <dl>
-<dt>-e <em>date</em></dt>
+<dt>-e <em>DATE</em></dt>
 <dd>
 Expiration date in <em>dd/mm/yyyy</em> format <code>[none]</code>
 </dd>
-<dt>-m <em>message</em></dt>
+<dt>-m <em>MESSAGE</em></dt>
 <dd>
 message to display upon expiration
 <code>["Please contact your provider"]</code>
 </dd>
-<dt>-f <em>script_name</em></dt>
+<dt>-f <em>SCRIPT</em></dt>
 <dd>
 File path of the script to compile
 </dd>
-<dt>-i <em>inline_option</em></dt>
+<dt>-P</dt>
+<dd>
+Use a pipe to feed the script, with ARGV fixes. Enabled automatically
+for <code>python</code>, <code>perl</code> and <code>csh</code>.
+</dd>
+<dt>-p</dt>
+<dd>
+Use a pipe to feed the script, without ARGV fixing.
+</dd>
+<dt>-i <em>IOPT</em></dt>
 <dd>
 Inline option for the shell interpreter i.e: <code>-e</code>
 </dd>
-<dt>-x <em>command</em></dt>
+<dt>-x <em>CMD</em></dt>
 <dd>
 eXec command, as a printf format i.e: <code>exec(\\'%s\\',@ARGV);</code>
 </dd>
-<dt>-l <em>last_option</em></dt>
+<dt>-l <em>LOPT</em></dt>
 <dd>
 Last shell option i.e: <code>--</code>
 </dd>
-<dt>-o <em>outfile</em></dt>
+<dt>-o <em>OUTFILE</em></dt>
 <dd>
-output to the file specified by outfile
+output to the file specified by OUTFILE
 </dd>
 <dt>-r</dt>
 <dd>
@@ -319,24 +330,24 @@ Verbose compilation
 </dd>
 <dt>-S</dt>
 <dd>
-Switch ON setuid for root callable programs [OFF]
+Enable setuid for root callable programs
 </dd>
 <dt>-D</dt>
 <dd>
-Switch on debug exec calls
+Enable debug (show exec calls, etc.)
 </dd>
 <dt>-U</dt>
 <dd>
-Make binary to be untraceable (using <em>strace</em>, <em>ptrace</em>,
-<em>truss</em>, etc.)
+Make binary execution untraceable (using <em>strace</em>,
+<em>ptrace</em>, <em>truss</em>, etc.)
 </dd>
 <dt>-H</dt>
 <dd>
 Hardening. Extra security flag without root access requirement that
 protects against dumping, code injection,
-<code>cat /proc/pid/cmdline</code>, ptrace, etc.. This feature is
-<strong>experimental</strong> and may not work on all systems. it
-requires bourne shell (sh) scripts
+<code>cat /proc/pid/cmdline</code>, <code>ptrace</code>, etc… This
+feature is <strong>experimental</strong> and may not work on all
+systems. it requires bourne shell (sh) scripts
 </dd>
 <dt>-C</dt>
 <dd>
@@ -345,6 +356,10 @@ Display license and exit
 <dt>-A</dt>
 <dd>
 Display abstract and exit
+</dd>
+<dt>-2</dt>
+<dd>
+Use <code>mmap2</code> system call.
 </dd>
 <dt>-B</dt>
 <dd>
@@ -356,6 +371,8 @@ Display help and exit
 </dd>
 </dl>
 <h1 id="environment-variables">ENVIRONMENT VARIABLES</h1>
+<p>These can be used to provide options to the GCC Compiler. Examples:
+static compilation, machine architecture, sanitize options.</p>
 <dl>
 <dt>CC</dt>
 <dd>
@@ -386,11 +403,12 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="
 <p>The maximum size of the script that could be executed once compiled
 is limited by the operating system configuration parameter
 <code>_SC_ARG_MAX</code> (see sysconf(2))</p>
-<h1 id="authors">AUTHORS</h1>
+<h1 id="main-authors">MAIN AUTHORS</h1>
 <p>Francisco Rosales <a href="mailto:frosal@fi.upm.es"
-class="email">frosal@fi.upm.es</a></p>
-<p>Md Jahidul Hamid <a href="mailto:jahidulhamid@yahoo.com"
+class="email">frosal@fi.upm.es</a> Md Jahidul Hamid <a
+href="mailto:jahidulhamid@yahoo.com"
 class="email">jahidulhamid@yahoo.com</a></p>
+<p>Note: Do not contact them, they are no longer actively involved</p>
 <h1 id="report-bugs-to">REPORT BUGS TO</h1>
 <p>https://github.com/neurobin/shc/issues</p>
 </body>
