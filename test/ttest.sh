@@ -68,7 +68,7 @@ for shell in "${shells[@]}"; do
             fi
         } > "$tmpf"
         # shellcheck disable=SC2086
-        "$shc" -0 $opt -f "$tmpf" -o "$tmpa"
+        "$shc" $opt -f "$tmpf" -o "$tmpa"
         # ls -la "$tmpa"
 
         if [ "$opt" = "-D" ] ; then

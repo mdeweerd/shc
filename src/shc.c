@@ -88,8 +88,8 @@ static const char *help[] = {
 	"    -U     Make binary untraceable [no]",
 	"    -H     Hardening : extra security protection [no]",
 	"           Require bourne shell (sh) and parameters are not supported",
-	"    -P     Submit script as a pipe [no]",
-	"    -0     Fix handling of argv0 [no]",
+	"    -P     Submit script as a pipe, with argv forging [no]",
+	"    -p     Submit script as a pipe, without argv forging [no]",
 	"    -C     Display license and exit",
 	"    -A     Display abstract and exit",
 	"    -B     Compile for busybox",
@@ -160,7 +160,7 @@ static const char PIPESCRIPT_line[] =
 static int PIPESCRIPT_flag = 0;
 static const char FIXARGV0_line[] =
 	"#define FIXARGV0	%d	/* Define as 1 fix handling of ARGV0 */\n";
-static int FIXARGV0_flag = 0;
+static int FIXARGV0_flag = 1;
 
 static const char *RTC[] = {
 	"",
@@ -836,7 +836,7 @@ static const char *RTC[] = {
 static int parse_an_arg(int argc, char *argv[])
 {
 	extern char *optarg;
-	const char *opts = "e:m:f:i:x:l:o:rvDSUHPCAB2h0";
+	const char *opts = "e:m:f:i:x:l:o:rvDSUHPCAB2hp";
 	struct tm tmp[1];
 	time_t expdate;
 	int cnt, l;
@@ -902,9 +902,11 @@ static int parse_an_arg(int argc, char *argv[])
 		break;
 	case 'P':
 		PIPESCRIPT_flag = 1;
-		break;
-	case '0':
 		FIXARGV0_flag = 1;
+		break;
+	case 'p':
+		PIPESCRIPT_flag = 1;
+		FIXARGV0_flag = 0;
 		break;
 	case 'H':
 		HARDENING_flag = 1;
@@ -1097,11 +1099,11 @@ struct {
 	{ "csh", "-c", "-b", "exec '%s' $argv:q", "source %.0s'%s'" },  /* AIX: No file for $0 */
 	{ "tcsh", "-c", "-b", "exec '%s' $argv:q", "source %.0s'%s'" },
 	{ "python", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])",
-	  "import sys;sys.argv[0:1]=[];%.0s exec(open('%s').read())" },
+	  "import sys;sys.argv[0:1]=[];__file__='%s'; exec(open('%s').read())" },
 	{ "python2", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])",
-	  "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read())" },
+	  "import sys;sys.argv[0:1]=[];__file__='%s';exec(open('%s').read())" },
 	{ "python3", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])",
-	  "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read())" },
+	  "import sys;sys.argv[0:1]=[];__file__='%s';exec(open('%s').read())" },
 	{ NULL, NULL, NULL, NULL },
 };
 
@@ -1522,10 +1524,16 @@ void do_all(int argc, char *argv[])
 	if (eval_shell(text)) {
 		return;
 	}
-	if (strstr(shll, "python")
-		|| strstr(shll, "perl")) {
-		// Force Pipe method for python, perl to ensure expected behavior
+	if (
+		strstr(shll, "python")
+		|| strstr(shll, "perl")
+		|| strstr(shll, "csh")
+		) {
+		// Default to pipe method for python, perl, csh
+		// to ensure expected behavior
+		// - csh: prevent interpretation of '!' as history
 		PIPESCRIPT_flag = 1;
+		FIXARGV0_flag = 1;
 	}
 	if (write_C(file, argc, argv)) {
 		return;
