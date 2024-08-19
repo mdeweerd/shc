@@ -86,8 +86,8 @@ static const char * help[] = {
 "    -U     Make binary untraceable [no]",
 "    -H     Hardening : extra security protection [no]",
 "           Require bourne shell (sh) and parameters are not supported",
-"    -P     Submit script as a pipe [no]",
-"    -p     Don't forge argv0 with -P [no]",
+"    -P     Submit script as a pipe, with argv forging [no]",
+"    -p     Submit script as a pipe, without argv forging [no]",
 "    -C     Display license and exit",
 "    -A     Display abstract and exit",
 "    -B     Compile for busybox",
@@ -818,7 +818,7 @@ static const char * RTC[] = {
 static int parse_an_arg(int argc, char * argv[])
 {
 	extern char * optarg;
-	const char * opts = "e:m:f:i:x:l:o:rvDSUHPCAB2h0";
+	const char * opts = "e:m:f:i:x:l:o:rvDSUHPCAB2hp";
 	struct tm tmp[1];
 	time_t expdate;
 	int cnt, l;
@@ -884,8 +884,10 @@ static int parse_an_arg(int argc, char * argv[])
 		break;
 	case 'P':
 		PIPESCRIPT_flag = 1;
+		FIXARGV0_flag = 1;
 		break;
 	case 'p':
+		PIPESCRIPT_flag = 1;
 		FIXARGV0_flag = 0;
 		break;
 	case 'H':
@@ -1071,9 +1073,9 @@ struct {
 	{ "ash",  "-c", "--", "exec '%s' \"$@\"", ". %.0s'%s'" }, /* Linux */
 	{ "csh",  "-c", "-b", "exec '%s' $argv:q", "source %.0s'%s'" }, /* AIX: No file for $0 */
 	{ "tcsh", "-c", "-b", "exec '%s' $argv:q", "source %.0s'%s'" },
-	{ "python", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];%.0s exec(open('%s').read())" },
-	{ "python2", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read())" },
-	{ "python3", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];'%.0s'; exec(open('%s').read())" },
+	{ "python", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];__file__='%s'; exec(open('%s').read())" },
+	{ "python2", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];__file__='%s';exec(open('%s').read())" },
+	{ "python3", "-c", "", "import os,sys;os.execv('%s',sys.argv[1:])", "import sys;sys.argv[0:1]=[];__file__='%s';exec(open('%s').read())" },
 	{ NULL,   NULL, NULL, NULL },
 };
 
@@ -1425,6 +1427,7 @@ void do_all(int argc, char * argv[])
 	   ||strstr(shll, "perl")
 	   ||strstr(shll, "csh")) {
 		PIPESCRIPT_flag=1;
+		FIXARGV0_flag = 1;
 	}
 	if (write_C(file, argv))
 		return;
