@@ -18,9 +18,3 @@ updates:
     patterns: ["*"]
     #patterns: ["aws", "terraform-*"]
     multi-ecosystem-group: "infrastructure"
-
-  - package-ecosystem: "nix"
-    directory: "/"
-    patterns: ["*"]
-    #patterns: ["nginx", "redis", "postgres"]
-    multi-ecosystem-group: "infrastructure"
