@@ -15,7 +15,7 @@ jobs:
   convert_via_pandoc:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.head_ref }}
 
@@ -34,7 +34,7 @@ jobs:
         run: |
           python3 ${{ github.workspace }}/.github/update_version.py --version ${{ github.ref_name }}
 
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: changes
         with:
           filters: |
