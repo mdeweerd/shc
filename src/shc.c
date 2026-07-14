@@ -844,13 +844,13 @@ static int parse_an_arg(int argc, char *argv[])
 #ifndef __CYGWIN__
 	extern char *optarg;
 #endif
-	const char *opts = "e:m:i:x:l:o:f:2ABCDhHpPrSUv";
+	const char *arg_opts = "e:m:i:x:l:o:f:2ABCDhHpPrSUv";
 	struct tm tmp[1];
 	time_t expdate;
 	int cnt, l;
 	char ctrl;
 
-	switch (getopt(argc, argv, opts)) {
+	switch (getopt(argc, argv, arg_opts)) {
 	case 'e':
 		memset(tmp, 0, sizeof(tmp));
 		cnt = sscanf(optarg, "%2d/%2d/%4d%c",
@@ -1012,7 +1012,7 @@ void stte_0(void)
 	indx = jndx = kndx = 0;
 	do {
 		stte[indx] = indx;
-	} while (++indx);
+	} while (++indx);  // cppcheck-suppress knownConditionTrueFalse
 }
 
 /*
@@ -1020,15 +1020,16 @@ void stte_0(void)
  */
 void key(void *str, int len)
 {
-	unsigned char tmp, *ptr = (unsigned char *)str;
+	unsigned char *ptr = (unsigned char *)str;
 	while (len > 0) {
 		do {
+			unsigned char tmp;
 			tmp = stte[indx];
 			kndx += tmp;
 			kndx += ptr[(int)indx % len];
 			stte[indx] = stte[kndx];
 			stte[kndx] = tmp;
-		} while (++indx);
+		} while (++indx);  // cppcheck-suppress knownConditionTrueFalse
 		ptr += 256;
 		len -= 256;
 	}
@@ -1059,12 +1060,12 @@ void arc4(void *str, int len)
 /*
  * Key with file invariants.
  */
-int key_with_file(char *file)
+int key_with_file(char *file_arg)
 {
 	struct stat statf[1];
 	struct stat control[1];
 
-	if (stat(file, statf) < 0) {
+	if (stat(file_arg, statf) < 0) {
 		return -1;
 	}
 
@@ -1115,17 +1116,17 @@ struct {
 	{ NULL, NULL, NULL, NULL },
 };
 
-int eval_shell(char *text)
+int eval_shell(const char *text_arg)
 {
 	int i;
 	char *ptr;
 	char *tmp_realloc;
 
-	ptr = strchr(text, (int)'\n');
+	ptr = strchr(text_arg, (int)'\n');
 	if (!ptr) {
-		i = strlen(text);
+		i = strlen(text_arg);
 	} else {
-		i = ptr - text;
+		i = ptr - text_arg;
 	}
 	ptr = malloc(i + 1);
 	shll = malloc(i + 1);
@@ -1136,7 +1137,7 @@ int eval_shell(char *text)
 		opts && (free(opts), 1);
 		return -1;
 	}
-	strncpy(ptr, text, i);
+	strncpy(ptr, text_arg, i);
 	ptr[i] = '\0';
 
 	*opts = '\0';
@@ -1207,7 +1208,7 @@ int eval_shell(char *text)
 	return 0;
 }
 
-char*read_script(char *file)
+char*read_script(const char *file_arg)
 {
 	FILE *i;
 	char *l_text;
@@ -1218,7 +1219,7 @@ char*read_script(char *file)
 	if (!l_text) {
 		return NULL;
 	}
-	i = fopen(file, "r");
+	i = fopen(file_arg, "r");
 	if (!i) {
 		free(l_text);
 		return NULL;
@@ -1254,7 +1255,7 @@ char*read_script(char *file)
 			"   \"maximum size of arguments to EXEC\", could comprise its binary execution.\n"
 			"   In the current System the call sysconf(_SC_ARG_MAX) returns %d bytes\n"
 			"   and your script \"%s\" is %d bytes length.\n",
-			my_name, cnt, file, l);
+			my_name, cnt, file_arg, l);
 	}
 #endif
 	return l_text;
@@ -1266,7 +1267,7 @@ unsigned rand_mod(unsigned mod)
 	unsigned rnd, top = RAND_MAX;
 	top -= top % mod;
 	while (top <= (rnd = rand())) {  // NOLINT
-		continue;
+		// continue;
 	}
 	/* Using high-order bits. */
 	rnd = 1.0 * mod * rnd / (1.0 + top);
@@ -1293,7 +1294,7 @@ int noise(char *ptr, unsigned min, unsigned xtra, int str)
 
 static int offset;
 
-void prnt_bytes(FILE *o, char *ptr, int m, int l, int n)
+void prnt_bytes(FILE *o, const char *ptr, int m, int l, int n)
 {
 	int i;
 
@@ -1314,7 +1315,7 @@ void prnt_bytes(FILE *o, char *ptr, int m, int l, int n)
 	offset += n;
 }
 
-void prnt_array(FILE *o, void *ptr, char *name, int l, char *cast)
+void prnt_array(FILE *o, const void *ptr, const char *name, int l, const char *cast)
 {
 	int m = rand_mod(1 + l / 4);    /* Random amount of random pre  padding (offset) */
 	int n = rand_mod(1 + l / 4);    /* Random amount of random post padding  (tail)  */
@@ -1327,7 +1328,7 @@ void prnt_array(FILE *o, void *ptr, char *name, int l, char *cast)
 	prnt_bytes(o, ptr, m, l, n);
 }
 
-void dump_array(FILE *o, void *ptr, char *name, int l, char *cast)
+void dump_array(FILE *o, void *ptr, const char *name, int l, const char *cast)  // cppcheck-suppress unusedFunction
 {
 	arc4(ptr, l);
 	prnt_array(o, ptr, name, l, cast);
@@ -1345,7 +1346,7 @@ void cleanup_write_c(char *msg1, char *msg2, char *chk1, char *chk2, char *tst1,
 	if (name) { free(name); }
 }
 
-int write_C(char *file, int argc, char *argv[])
+int write_C(const char *file_arg, int argc, const char *argv[])
 {
 	char pswd[256];
 	int pswd_z = sizeof(pswd);
@@ -1371,7 +1372,7 @@ int write_C(char *file, int argc, char *argv[])
 	int tst2_z = strlen(tst2) + 1;
 	char *chk2 = strdup(tst2);
 	int chk2_z = tst2_z;
-	char *name = strdup(file);
+	char *name = strdup(file_arg);
 	FILE *o;
 	int l_idx;
 	int numd = 0;
@@ -1399,7 +1400,7 @@ int write_C(char *file, int argc, char *argv[])
 	l_idx = !rlax[0];
 	arc4(rlax, rlax_z); numd++;
 	if (l_idx && key_with_file(kwsh)) {
-		fprintf(stderr, "%s: invalid file name: %s ", my_name, kwsh);
+		fprintf(stderr, "%s: invalid file_arg name: %s ", my_name, kwsh);
 		perror("");
 		cleanup_write_c(msg1, msg2, chk1, chk2, tst1, tst2, kwsh, name);
 		exit(1);
@@ -1414,7 +1415,7 @@ int write_C(char *file, int argc, char *argv[])
 	name = strcat(realloc(name, strlen(name) + 5), ".x.c");  // NOLINT
 	o = fopen(name, "w");
 	if (!o) {
-		fprintf(stderr, "%s: creating output file: %s ", my_name, name);
+		fprintf(stderr, "%s: creating output file_arg: %s ", my_name, name);
 		perror("");
 		cleanup_write_c(msg1, msg2, chk1, chk2, tst1, tst2, kwsh, name);
 		exit(1);
@@ -1474,7 +1475,7 @@ int write_C(char *file, int argc, char *argv[])
 
 int make(void)
 {
-	char *cc, *cflags, *ldflags;
+	const char *cc, *cflags, *ldflags;
 	char cmd[SIZE];
 
 	cc = getenv("CC");
@@ -1506,7 +1507,7 @@ int make(void)
 	if (system(cmd)) {
 		return -1;
 	}
-	char *strip = getenv("STRIP");
+	const char *strip = getenv("STRIP");
 	if (!strip) {
 		strip = "strip";
 	}
@@ -1545,7 +1546,7 @@ void do_all(int argc, char *argv[])
 		PIPESCRIPT_flag = 1;
 		FIXARGV0_flag = 1;
 	}
-	if (write_C(file, argc, argv)) {
+	if (write_C(file, argc, argv)) {  // cppcheck-suppress knownConditionTrueFalse
 		return;
 	}
 	if (make()) {
