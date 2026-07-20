@@ -71,7 +71,7 @@ repos:
   #- repo: https://github.com/pocc/pre-commit-hooks
   #  rev: 8387cd298d01468479e7e52429ca8c95ed9546ef  # v1.3.5
   - repo: https://github.com/mdeweerd/pre-commit-hooks
-    rev:  346dc7e4785467c9615d73cd37c3217f2835c45f  # v1.3.5 - corrected for cppcheck cache
+    rev:  1b4abb7690690e68642195c7cfec5efc8d647af9  # v1.3.5 - corrected for cppcheck cache
     # Install dependencies on windows:
     #  choco install llvm uncrustify cppcheck
     hooks:
